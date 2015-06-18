@@ -1,0 +1,13 @@
+<package>
+  <description brief="OpenRAVE plugin for interfacing with SBPL">
+     Planning plugin for querying SBPL library through OpenRAVE.
+  </description>
+  <author>Jennifer King</author>
+  <license>BSD</license>
+  <review status="released" notes="approved on 2/14"/>
+  <depend package="openrave"/>
+  <export>
+    <openrave plugins="${prefix}/lib"/>
+    <cpp cflags="-I${prefix}/src" lflags="-L${prefix}/lib"/>
+  </export>
+</package>
