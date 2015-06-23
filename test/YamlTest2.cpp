@@ -23,7 +23,9 @@ int main(int argc, char** argv){
 
     double cellsize = 0.0;
 #ifdef YAMLCPP_NEWAPI
+    std::cout << " start cell " << std::endl;
     cellsize = doc["cellsize"].as<double>();
+    std::cout << " end cell" << std::endl;
 #else
     doc["cellsize"] >> cellsize;
 #endif
@@ -85,15 +87,15 @@ int main(int argc, char** argv){
                            " zmax : " << extents.zmax << std::endl;
 
     BOOST_FOREACH(or_sbpl_for_ada::ActionList::value_type &alist, actions){
-	BOOST_FOREACH(or_sbpl_for_ada::ActionPtr a, alist.second){
-	    or_sbpl_for_ada::Action7dPtr ca = boost::dynamic_pointer_cast<or_sbpl_for_ada::Action7d>(a);
-	    std::cout << "Added action with weight: " << ca->getWeight() << std::endl;
-	    std::cout << "Poses: " << std::endl;
-	    std::vector<or_sbpl_for_ada::WorldCoordinate> pts = ca->getPoints();
-	    for(unsigned int i=0; i < pts.size(); i++){
-		or_sbpl_for_ada::WorldCoordinate wc = pts[i];
-		std::cout << "\t" << wc << std::endl;
-	    }
-	}
+    BOOST_FOREACH(or_sbpl_for_ada::ActionPtr a, alist.second){
+        or_sbpl_for_ada::Action7dPtr ca = boost::dynamic_pointer_cast<or_sbpl_for_ada::Action7d>(a);
+        std::cout << "Added action with weight: " << ca->getWeight() << std::endl;
+        std::cout << "Poses: " << std::endl;
+        std::vector<or_sbpl_for_ada::WorldCoordinate> pts = ca->getPoints();
+        for(unsigned int i=0; i < pts.size(); i++){
+        or_sbpl_for_ada::WorldCoordinate wc = pts[i];
+        std::cout << "\t" << wc << std::endl;
+        }
+    }
     }
 }

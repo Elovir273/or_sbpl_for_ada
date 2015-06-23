@@ -1,7 +1,9 @@
 #include <or_sbpl_for_ada/SBPLBasePlanner7d.h>
+#include <or_sbpl_for_ada/SBPLBasePlannerTypes7d.h>
 #include <or_sbpl_for_ada/Action7d.h> 
 #include <or_sbpl_for_ada/YamlUtils2.h>
 
+#include <boost/unordered_map.hpp>
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 #include <sbpl/planners/araplanner.h>
@@ -9,6 +11,8 @@
 #include <sbpl/utils/utils.h>
 
 #include <yaml-cpp/yaml.h>
+#include <fstream>
+
 
 using namespace or_sbpl_for_ada;
 
@@ -23,6 +27,8 @@ SBPLBasePlanner::~SBPLBasePlanner() {
 
 bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersConstPtr params) {
 
+    std::cout << "t1" << std::endl;
+
     _robot = robot;
     _params = params;
     _env = boost::make_shared<SBPLBasePlannerEnvironment>(robot); //7d
@@ -32,11 +38,13 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     extra_stream << params->_sExtraParameters;
 
 
+
     double _maxtime = 1.0;
     double linear_weight;
     double angle_weight;
     double mode_weight;
     double cellsize = 0.0;
+
     int numangles = 0;
     int nummodes = 3;  //a recuperer from the yaml
 
@@ -44,18 +52,24 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     ActionList actions;
 
 #ifdef YAMLCPP_NEWAPI
-    YAML::Node doc = YAML::Load(extra_stream);
 
-    linear_weight = doc["linear_weight"].as<double>();
-    angle_weight = doc["angle_weight"].as<double>();
-    mode_weight = doc["mode_weight"].as<double>();
-    doc["extents"] >> extents;
+    //YAML::Node doc = YAML::Load(extra_stream);
+    YAML::Node doc = YAML::LoadFile("/home/gquere/pr_catkin/src/or_sbpl_for_ada/yaml/actions.yaml");
+
     cellsize = doc["cellsize"].as<double>();
+    linear_weight = doc["linear_weight"].as<double>();
+    mode_weight = doc["mode_weight"].as<double>();
+    std::cout << "before lec : "<< extents.xmin << " " << extents.xmax<< std::endl;
+    doc["extents"] >> extents;
+    std::cout << "after lec : "<<extents.xmin << " " << extents.xmax<< std::endl;
+    angle_weight = doc["angle_weight"].as<double>();
     numangles = doc["numangles"].as<int>();
     nummodes = doc["nummodes"].as<int>();
     doc["actions"] >> actions;
     _maxtime = doc["timelimit"].as<double>();
+
 #else
+
     // Parse the extra parameters as yaml
     YAML::Parser parser(extra_stream);
     YAML::Node doc;
@@ -72,7 +86,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     doc["nummodes"] >> nummodes;
     doc["actions"] >> actions;
     doc["timelimit"] >> _maxtime;
-    
+
     if (YAML::Node const *init_eps = doc.FindValue("initial_eps")) {
         *init_eps >> _epsinit;
         RAVELOG_INFO("[SBPLBasePlanner] Initial epsilon: %0.3f\n", _epsinit);
@@ -91,6 +105,8 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     }
 #endif
 
+    std::cout << "t3" << std::endl;
+    RAVELOG_INFO("[SBPLBasePlanner] extents : %0.3f\n", extents.xmin);
     RAVELOG_INFO("[SBPLBasePlanner] angle weight: %0.3f\n", angle_weight);
     RAVELOG_INFO("[SBPLBasePlanner] mode weight: %0.3f\n", mode_weight);
     RAVELOG_INFO("[SBPLBasePlanner] Cellsize: %0.3f\n", cellsize);
@@ -106,23 +122,35 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
 
 bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input) {
 
-
 }
 
 
 
 OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj) {
 
-
+    RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
+    std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
+    std::vector<OpenRAVE::dReal> v;
+    _robot->GetDOFValues(v);
+    std::cout << "_robot->GetDOFValues() : " ;
+    for (int temp1=0;temp1<v.size();temp1++) {
+        std::cout << v[temp1] << " ";
+    }
+    std::cout <<std::endl;
 
     /* Setup the start point for the plan */
     try{
 
         std::vector<OpenRAVE::dReal> start_vals(6);
         OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_vals.begin(),
-          _robot->GetTransform(),
-          OpenRAVE::DOF_X | OpenRAVE::DOF_Y | OpenRAVE::DOF_Z |OpenRAVE::DOF_Rotation3D);
+          _robot->GetTransform(), OpenRAVE::DOF_Transform);
+
+       std::cout << " start values : " ;
+        for (int temp2=0;temp2<start_vals.size();temp2++) {
+            std::cout << start_vals[temp2] << " ";
+        }
+        std::cout <<std::endl;
 
         // On recupere les DOF, qu'on converti en position / orientation. Ici on part du mode 1 ( openrave ne connait pas les modes )
         int start_id = _env->SetStart(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5],1);
@@ -156,7 +184,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
             return OpenRAVE::PS_Failed;
         }
 
-        // Set mode goal_mode to -1 : no constraints on the mode
+        // Set mode goal_mode to -1 : no constraints on the mode // AF, for now 1 by default
         int goal_id = _env->SetGoal(goal_vals[0], goal_vals[1], goal_vals[2],goal_vals[3], goal_vals[4], goal_vals[5], -1 );
         if( goal_id < 0 || _planner->set_goal(goal_id) == 0){
             RAVELOG_ERROR("[SBPLBasePlanner] Failed to set goal state\n");
@@ -177,8 +205,11 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         rparams.dec_eps = _epsdec;
         rparams.return_first_solution = _return_first;
         rparams.max_time = _maxtime;
+        RAVELOG_INFO("[SBPLBasePlanner] Max time : %0.3f\n", _maxtime);
 
         int solved = _planner->replan(&plan, rparams, &path_cost);
+
+        
         RAVELOG_INFO("[SBPLBasePlanner] Solved? %d\n", solved);
         if( solved ){
 

@@ -41,7 +41,7 @@ target_link_libraries(${PROJECT_NAME}
 
 openrave_plugin(${PROJECT_NAME}_plugin src/SBPLMain.cpp)
 target_link_libraries(${PROJECT_NAME}_plugin
-    ${PROJECT_NAME} ${SBPL_LIBRARIES} ${OpenRAVE_LIBRARIES})
+    ${PROJECT_NAME} yaml-cpp ${SBPL_LIBRARIES} ${OpenRAVE_LIBRARIES})
 
 add_executable(yamltest2
   test/YamlTest2.cpp

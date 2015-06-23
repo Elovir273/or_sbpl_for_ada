@@ -47,7 +47,7 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
     // Angles 
     _numangles = numangles;
     _anglesize = 2.0*bmc::pi<double>()/_numangles;
-
+   
     // Weighting
     _lweight = lweight;
     _tweight = tweight;
@@ -56,8 +56,11 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
     // Actions
     _actions = actions;
 
+     std::cout << "anglesize : "<<_anglesize << std::endl;
+     int space_size=_gridwidth*_gridheight*_griddepth*_nummodes*_numangles*_numangles*_numangles;
+     std::cout << "space size : "<< space_size << std::endl;
+
     return true;
-    
 }
 
 bool SBPLBasePlannerEnvironment::InitializeEnv(const char* sEnvFile) {
@@ -81,7 +84,8 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set start to grid coordinate: %s\n", gc.toString().c_str());
     int idx = GridCoordinateToStateIndex(gc);
-    
+    std::cout << "setstart, idx : "<<idx<<std::endl;
+
     if( idx == INVALID_INDEX ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] The start state %s is invalid.\n", gc.toString().c_str() );
         throw new SBPL_Exception();
@@ -137,6 +141,12 @@ int SBPLBasePlannerEnvironment::SetGoal(const double &x, const double &y, const 
 
 void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
                                                                     std::vector<PlannedWaypointPtr> &path) {
+         std::vector<int> Tsucc_ids;
+        std::vector<int> Tcosts;
+        std::vector<ActionPtr> Tactions;
+        
+        GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
+       // std::cout << "test1 : " << Tsucc_ids.size() << std::endl;
 
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Begin ConvertStateIDPathIntoXYThetaPath\n");
@@ -150,6 +160,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         // Grab the states that start and end this action
         int start_id = state_ids[pidx];
         int goal_id = state_ids[pidx+1];
+       // std::cout <<"start id & goal id : "<< start_id << " "<<goal_id<<std::endl;
 
         // Now search through all successors to find the best (least cost) one
         //   that leads to the goal
@@ -159,6 +170,15 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         
         GetSuccs(start_id, &succ_ids, &costs, &actions);
         
+       // std::cout << "succ : " << succ_ids.size() << std::endl;
+
+         std::vector<int> Tsucc_ids;
+        std::vector<int> Tcosts;
+        std::vector<ActionPtr> Tactions;
+        
+        GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
+      //  std::cout << "test2 : " << Tsucc_ids.size() << std::endl;
+
         int best_idx = -1;
         double best_cost = std::numeric_limits<double>::infinity();
         for(unsigned int idx=0; idx < succ_ids.size(); idx++){
@@ -179,8 +199,13 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         // Play the action forward, setting all the intermediate states
         ActionPtr a = actions[best_idx];
 
+
         GridCoordinate gc = StateId2CoordTable[start_id];
+       // std::cout<<"                                           Traj (grid) : "
+       // <<gc.x<<" "<<gc.y<<" "<<gc.z<<" "<<gc.phi<<" "<<gc.theta<<" "<<gc.psi<<std::endl;
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
+        std::cout<<"    Traj (world) : "
+        <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
         std::vector<WorldCoordinate> pts = a->applyWithIntermediates(wc_current, _robot);
 
         BOOST_FOREACH(WorldCoordinate wc_next, pts){
@@ -263,22 +288,30 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
     // Now step through each of the actions
     //std::vector<ActionPtr> actions = _actions[gc.theta];
     std::vector<ActionPtr> actions = _actions[gc.mode];
+
+
+  //  std::cout << "Ltest : "<< actions.size() << std::endl;
+
+
     BOOST_FOREACH(ActionPtr a, actions) {
 
         // Apply each action, checking for collision along the way
         WorldCoordinate wc_final;
+
         bool valid = a->apply(wc, _robot, wc_final);
-        
+      //  std::cout << "Ltest2 : " << valid <<std::endl;
         if( valid ) {
             GridCoordinate gc_final = WorldCoordinateToGridCoordinate(wc_final);
             int state_idx = GridCoordinateToStateIndex(gc_final);
+         //   std::cout << "Ltest3 : "<< state_idx << std::endl;
 	    if(state_idx == orig_idx){
-		RAVELOG_WARN("[SBPLBasePlanningEnvironment] Action did not move from original grid cell. Check primitives for validity.");
+		RAVELOG_WARN("[SBPLBasePlanningEnvironment] Action did not move from original grid cell. Check primitives for validity.\n");
 		continue;
 	    }
 
             if(state_idx != INVALID_INDEX){
                 // Action propagatin led to a valid state
+                
 
                 std::map<int, int>::iterator it = StateIndex2StateIdTable.find(state_idx);
                 int state_id;
@@ -386,7 +419,9 @@ GridCoordinate SBPLBasePlannerEnvironment::WorldCoordinateToGridCoordinate(const
     if( z < 0 ){ z = 0.0; }
     retCoord.z = (int)(z/_cellsize);
     
-    double phi = wcoord.theta;
+    double phi = wcoord.phi;
+   // std::cout << "test : " << phi << " "<<bmc::pi<double>()<<std::endl;
+
     while(phi < 0){
         phi += 2.0*bmc::pi<double>();
     }
@@ -472,7 +507,7 @@ int SBPLBasePlannerEnvironment::GridCoordinateToStateIndex(const GridCoordinate 
             coord.psi * _nummodes * _numangles * _numangles +
             coord.x * _nummodes * _numangles * _numangles * _numangles +
             coord.y * _nummodes * _numangles * _numangles * _numangles * _gridwidth +
-            coord.y * _nummodes * _numangles * _numangles * _numangles * _gridwidth * _gridheight;
+            coord.z * _nummodes * _numangles * _numangles * _numangles * _gridwidth * _gridheight;
 
     return retIdx;
 }
