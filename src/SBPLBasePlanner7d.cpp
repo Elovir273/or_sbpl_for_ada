@@ -17,7 +17,7 @@
 using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
-OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(10.0),
+OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(10.0), 
 _epsinit(5.0), _epsdec(0.2), _return_first(false) {
 
 }
@@ -32,12 +32,10 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     _robot = robot;
     _params = params;
     _env = boost::make_shared<SBPLBasePlannerEnvironment>(robot); //7d
-    
+
     // Parse the extra parameters
     std::stringstream extra_stream;
     extra_stream << params->_sExtraParameters;
-
-
 
     double _maxtime = 1.0;
     double linear_weight;
@@ -128,6 +126,8 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input
 
 OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj) {
 
+    double _path_cost=-1;
+
     RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
     std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
@@ -179,13 +179,13 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         //                                                         OpenRAVE::DOF_X | OpenRAVE::DOF_Y | OpenRAVE::DOF_RotationAxis);
         goal_vals = _params->vgoalconfig;
 
-        if(goal_vals.size() != 6){
+        if(goal_vals.size() != 7){
             RAVELOG_ERROR("[SBPLBasePlanner] Unable to extract goal of appropriate size.\n");
             return OpenRAVE::PS_Failed;
         }
 
         // Set mode goal_mode to -1 : no constraints on the mode // AF, for now 1 by default
-        int goal_id = _env->SetGoal(goal_vals[0], goal_vals[1], goal_vals[2],goal_vals[3], goal_vals[4], goal_vals[5], -1 );
+        int goal_id = _env->SetGoal(goal_vals[0], goal_vals[1], goal_vals[2],goal_vals[3], goal_vals[4], goal_vals[5], goal_vals[6]);
         if( goal_id < 0 || _planner->set_goal(goal_id) == 0){
             RAVELOG_ERROR("[SBPLBasePlanner] Failed to set goal state\n");
             return OpenRAVE::PS_Failed;
@@ -199,7 +199,6 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     /* Attempt to plan */
     try {
         std::vector<int> plan;
-        int path_cost;
         RAVELOG_INFO("[SBPLBasePlanner] Max time1 : %0.3f\n", _maxtime);
         ReplanParams rparams(_maxtime);
         rparams.initial_eps = _epsinit;
@@ -208,30 +207,34 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         rparams.max_time = _maxtime;
         RAVELOG_INFO("[SBPLBasePlanner] Max time2 : %0.3f\n", _maxtime);
 
-        int solved = _planner->replan(&plan, rparams, &path_cost);
+        int solved = _planner->replan(&plan, rparams);
 
         
         RAVELOG_INFO("[SBPLBasePlanner] Solved? %d\n", solved);
         if( solved ){
 
             /* Write out the trajectory to return back to the caller */
-            OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_X | OpenRAVE::DOF_Y | OpenRAVE::DOF_Z | OpenRAVE::DOF_Rotation3D,
+            OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_Transform,
                _robot, "linear");
             config_spec.AddDerivativeGroups(1, true);  //velocity group, add delta time group
             ptraj->Init(config_spec);
-            std::vector<PlannedWaypointPtr> xyth_path;
-            _env->ConvertStateIDPathIntoWaypointPath(plan, xyth_path);
+            std::vector<PlannedWaypointPtr> xyzA_path;
 
-            for(unsigned int idx=0; idx < xyth_path.size(); idx++){
+            _path_cost=_env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path);
+           
+            AddWaypoint(ptraj, config_spec,_path_cost,0, 0, 0, 0, 0, 0);
+            
+            for(unsigned int idx=0; idx < xyzA_path.size(); idx++){
 
                 // Grab this point in the planned path
-                PlannedWaypointPtr pt = xyth_path[idx];
+                PlannedWaypointPtr pt = xyzA_path[idx];
 
                 // Convert it to a trajectory waypoint
                 AddWaypoint(ptraj, config_spec, 
                     pt->coord.x, pt->coord.y, pt->coord.z, pt->coord.phi, pt->coord.theta, pt->coord.psi, pt->coord.mode);
             }
-
+            // Dirty. Add a point to pass the path_cost up. Haven't found a better solution yet.
+            
             return OpenRAVE::PS_HasSolution;
 
         }else{
@@ -243,7 +246,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while planning\n");
         return OpenRAVE::PS_Failed;
     }
-    
+
 }
 
 /*
@@ -324,7 +327,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     
     OpenRAVE::RaveGetAffineDOFValuesFromTransform(point.begin() + affine_offset, 
       transform, 
-      OpenRAVE::DOF_X | OpenRAVE::DOF_Y | OpenRAVE::DOF_Z | OpenRAVE::DOF_Rotation3D);
+      OpenRAVE::DOF_Transform);
 
     // Insert the point
     ptraj->Insert(idx, point, true);

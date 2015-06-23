@@ -144,18 +144,14 @@ int SBPLBasePlannerEnvironment::SetGoal(const double &x, const double &y, const 
     return state_id;
 }
 
-void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
+// Return the cost of the best path of this mode
+double SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
                                                                     std::vector<PlannedWaypointPtr> &path) {
-         std::vector<int> Tsucc_ids;
-        std::vector<int> Tcosts;
-        std::vector<ActionPtr> Tactions;
-        
-      //  GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
-       // std::cout << "test1 : " << Tsucc_ids.size() << std::endl;
-
+      
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Begin ConvertStateIDPathIntoXYThetaPath\n");
 
+    double path_cost = 0;
     // clear out the vector just in case
     path.clear();
 
@@ -175,15 +171,6 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         
         GetSuccs(start_id, &succ_ids, &costs, &actions);
         
-       // std::cout << "succ : " << succ_ids.size() << std::endl;
-
-        // std::vector<int> Tsucc_ids;
-       // std::vector<int> Tcosts;
-       // std::vector<ActionPtr> Tactions;
-        
-      //  GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
-      //  std::cout << "test2 : " << Tsucc_ids.size() << std::endl;
-
         int best_idx = -1;
         double best_cost = std::numeric_limits<double>::infinity();
         for(unsigned int idx=0; idx < succ_ids.size(); idx++){
@@ -195,6 +182,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
             }
         }
 
+        path_cost+=best_cost;
         // If we didn't find a successor something has gone terribly wrong, bail
         if(best_idx == -1){
             RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Failed to reconstruct path.");
@@ -204,7 +192,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         // Play the action forward, setting all the intermediate states
         ActionPtr a = actions[best_idx];
 
-
+ 
         GridCoordinate gc = StateId2CoordTable[start_id];
        // std::cout<<"                                           Traj (grid) : "
        // <<gc.x<<" "<<gc.y<<" "<<gc.z<<" "<<gc.phi<<" "<<gc.theta<<" "<<gc.psi<<std::endl;
@@ -221,8 +209,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
     }
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Generated path of length %d\n", path.size());
-
-    return;
+    return path_cost;
 }
 
 int SBPLBasePlannerEnvironment::GetFromToHeuristic(int FromStateID, int ToStateID){

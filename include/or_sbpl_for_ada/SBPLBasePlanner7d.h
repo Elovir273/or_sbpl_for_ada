@@ -62,6 +62,7 @@ namespace or_sbpl_for_ada {
 	 */
         virtual PlannerParametersConstPtr GetParameters() const { return _params; }
         
+
     private:
 
 	void AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec,
@@ -73,6 +74,7 @@ namespace or_sbpl_for_ada {
         PlannerParametersConstPtr _params;
         SBPLPlannerPtr _planner;
         SBPLBasePlannerEnvironmentPtr _env;
+        
 	double _maxtime;
 	double _epsinit;
 	double _epsdec;
