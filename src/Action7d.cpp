@@ -55,8 +55,8 @@ std::vector<WorldCoordinate> intermediates;
       //  std::cout << wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "
       //    <<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
 
-        double coef_pos=0.2;
-        double coef_angle=0.2;
+        double coef_pos=0.01;
+        double coef_angle=0.2; //( Pi/16 ~= 0.1963 : a bit more to be sure it moves )
         wc_current.x += coef_pos*next_pos.x;
         wc_current.y += coef_pos*next_pos.y;
         wc_current.z += coef_pos*next_pos.z;

@@ -1,17 +1,17 @@
 linear_weight: 10.0
-cellsize: 0.1
+cellsize: 0.01
 numangles: 16
 nummodes: 3
 timelimit: 100.0
 angle_weight: 10.0
 mode_weight: 100.0
 extents:
-- -2
-- 2
-- -2
-- 2
-- -2
-- 2
+- 0
+- 0.5
+- 0
+- 0.5
+- 0.5
+- 1
 actions:
 - mode: 1
   primitives:

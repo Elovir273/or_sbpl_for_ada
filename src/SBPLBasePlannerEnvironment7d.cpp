@@ -57,7 +57,12 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
     _actions = actions;
 
      std::cout << "anglesize : "<<_anglesize << std::endl;
-     int space_size=_gridwidth*_gridheight*_griddepth*_nummodes*_numangles*_numangles*_numangles;
+
+     unsigned long int space_size=_gridwidth*_gridheight*_griddepth*_nummodes*_numangles*_numangles*_numangles;
+     unsigned long int max_int = 2147483647;
+     if ( space_size > max_int ) {
+        RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Error : Space size > size int. \n");
+     }
      std::cout << "space size : "<< space_size << std::endl;
 
     return true;
@@ -145,7 +150,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         std::vector<int> Tcosts;
         std::vector<ActionPtr> Tactions;
         
-        GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
+      //  GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
        // std::cout << "test1 : " << Tsucc_ids.size() << std::endl;
 
 
@@ -172,11 +177,11 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         
        // std::cout << "succ : " << succ_ids.size() << std::endl;
 
-         std::vector<int> Tsucc_ids;
-        std::vector<int> Tcosts;
-        std::vector<ActionPtr> Tactions;
+        // std::vector<int> Tsucc_ids;
+       // std::vector<int> Tcosts;
+       // std::vector<ActionPtr> Tactions;
         
-        GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
+      //  GetSuccs(31, &Tsucc_ids, &Tcosts, &Tactions);
       //  std::cout << "test2 : " << Tsucc_ids.size() << std::endl;
 
         int best_idx = -1;

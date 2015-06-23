@@ -200,12 +200,13 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     try {
         std::vector<int> plan;
         int path_cost;
+        RAVELOG_INFO("[SBPLBasePlanner] Max time1 : %0.3f\n", _maxtime);
         ReplanParams rparams(_maxtime);
         rparams.initial_eps = _epsinit;
         rparams.dec_eps = _epsdec;
         rparams.return_first_solution = _return_first;
         rparams.max_time = _maxtime;
-        RAVELOG_INFO("[SBPLBasePlanner] Max time : %0.3f\n", _maxtime);
+        RAVELOG_INFO("[SBPLBasePlanner] Max time2 : %0.3f\n", _maxtime);
 
         int solved = _planner->replan(&plan, rparams, &path_cost);
 
