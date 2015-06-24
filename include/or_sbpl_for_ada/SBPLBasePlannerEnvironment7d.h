@@ -47,7 +47,8 @@ namespace or_sbpl_for_ada {
 				const double &lweight,
 				const double &tweight,
 				const double &mweight,
-				const int &nummodes);
+				const int &nummodes,
+				const int &start_mode);
 
 	/**
 	 * Not implemented - we want to initialize from the OpenRAVE planner parameters
@@ -150,7 +151,7 @@ namespace or_sbpl_for_ada {
 	 * @param theta The yaw of the start
 	 * @return The associated state id
 	 */
-        virtual int SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi, const int &mode);
+        virtual int SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi);
         
 	/**
 	 * Sets the goal state.
@@ -171,7 +172,8 @@ namespace or_sbpl_for_ada {
 	 */
         virtual void ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
 							std::vector<PlannedWaypointPtr> &path, double &path_cost,
-							std::vector<WorldCoordinate> &cart_path );
+							std::vector<WorldCoordinate> &cart_path,
+							std::vector<WorldCoordinate> &action_list );
         
 	/**
 	 * Converts from a grid coordinate to a world coordinate
@@ -264,6 +266,7 @@ namespace or_sbpl_for_ada {
         int _griddepth;
         int _numangles;
         int _nummodes;
+        int _start_mode;
 
         ActionList _actions;
         double _timestep; // seconds per step

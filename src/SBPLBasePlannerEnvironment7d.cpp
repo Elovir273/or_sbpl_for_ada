@@ -31,7 +31,8 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
 					    const double &lweight, // linear weight, x,y,z
 					    const double &tweight, // angle weight, phi, theta, psi
                         const double &mweight, // mode switching weight
-                        const int &nummodes){
+                        const int &nummodes,
+                        const int &start_mode){
 
     // Setup environment attributes
     _cellsize = cellsize;
@@ -43,6 +44,7 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
 
     //Modes 
     _nummodes = nummodes;
+    _start_mode = start_mode;
 
     // Angles 
     _numangles = numangles;
@@ -82,9 +84,9 @@ bool SBPLBasePlannerEnvironment::InitializeMDPCfg(MDPConfig* MDPCfg) {
     return true;
 }
 
-int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi, const int &mode) {
+int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi) {
 
-    WorldCoordinate wc(x, y, z, phi, theta, psi, mode);
+    WorldCoordinate wc(x, y, z, phi, theta, psi, _start_mode);
     GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set start to grid coordinate: %s\n", gc.toString().c_str());
@@ -147,7 +149,8 @@ int SBPLBasePlannerEnvironment::SetGoal(const double &x, const double &y, const 
 // Return the cost of the best path of this mode
 void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
                                                                     std::vector<PlannedWaypointPtr> &path, double &path_cost,
-                                                                    std::vector<WorldCoordinate> &cart_path ) {
+                                                                    std::vector<WorldCoordinate> &cart_path,
+                                                                    std::vector<WorldCoordinate> &action_list ) {
       
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Begin ConvertStateIDPathIntoXYThetaPath\n");
@@ -195,15 +198,23 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
 
 
         GridCoordinate gc = StateId2CoordTable[start_id];
-       // std::cout<<"                                           Traj (grid) : "
-       // <<gc.x<<" "<<gc.y<<" "<<gc.z<<" "<<gc.phi<<" "<<gc.theta<<" "<<gc.psi<<std::endl;
+    
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
         std::cout<<"    Traj (world) : "
         <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
      
-        cart_path.push_back(wc_current);
+        // Add initial state
+          if ( pidx == 0 )  {
+            cart_path.push_back(wc_current);
+          }
 
         std::vector<WorldCoordinate> pts = a->applyWithIntermediates(wc_current, _robot);
+
+        // pts[0] : because array with one value
+      WorldCoordinate effect_action( pts[0].x - wc_current.x, pts[0].y - wc_current.y, pts[0].z - wc_current.z, 
+                    pts[0].phi - wc_current.phi, pts[0].theta - wc_current.theta, pts[0].psi - wc_current.psi, pts[0].mode );
+        action_list.push_back(effect_action);
+        cart_path.push_back(pts[0]);
 
         BOOST_FOREACH(WorldCoordinate wc_next, pts){
             // Add this pose to the pose list

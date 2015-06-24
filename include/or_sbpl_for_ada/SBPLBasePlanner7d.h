@@ -69,8 +69,8 @@ namespace or_sbpl_for_ada {
 			 const double &x, const double &y, const double &z, const double &theta, const double &phi,const double &psi,const int &mode) const;
 	bool GetPathCost(std::ostream &out, std::istream &in);
 	bool GetCartPath(std::ostream &out, std::istream &in);
+	bool GetListActions(std::ostream &out, std::istream &in);
 
-	
         OpenRAVE::EnvironmentBasePtr _orenv;
         OpenRAVE::RobotBasePtr _robot;
         PlannerParametersConstPtr _params;
@@ -78,7 +78,8 @@ namespace or_sbpl_for_ada {
         SBPLBasePlannerEnvironmentPtr _env;
 
         std::vector<WorldCoordinate> _cart_path;
-        
+        std::vector<WorldCoordinate> _list_actions;
+
     double _path_cost;    
 	double _maxtime;
 	double _epsinit;

@@ -20,10 +20,13 @@ SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
 OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(10.0), _path_cost(-1.0),
 _epsinit(5.0), _epsdec(0.2), _return_first(false) {
 
- RegisterCommand("GetPathCost", boost::bind(&SBPLBasePlanner::GetPathCost, this, _1, _2),
+RegisterCommand("GetPathCost", boost::bind(&SBPLBasePlanner::GetPathCost, this, _1, _2),
                     "Get the cost of the plan");
 RegisterCommand("GetCartPath", boost::bind(&SBPLBasePlanner::GetCartPath, this, _1, _2),
                     "Get cartesian path");
+RegisterCommand("GetListActions", boost::bind(&SBPLBasePlanner::GetListActions, this, _1, _2),
+                    "Get the list of actions");
+
 }
 
 SBPLBasePlanner::~SBPLBasePlanner() {
@@ -49,6 +52,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
 
     int numangles = 0;
     int nummodes = 3;  
+    int start_mode = 0;
 
     EnvironmentExtents extents;    
     ActionList actions;
@@ -56,7 +60,6 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
 #ifdef YAMLCPP_NEWAPI
 
     YAML::Node doc = YAML::Load(extra_stream);
-    //YAML::Node doc = YAML::LoadFile("/home/gquere/pr_catkin/src/or_sbpl_for_ada/yaml/actions.yaml");
 
     cellsize = doc["cellsize"].as<double>();
     linear_weight = doc["linear_weight"].as<double>();
@@ -69,6 +72,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     nummodes = doc["nummodes"].as<int>();
     doc["actions"] >> actions;
     _maxtime = doc["timelimit"].as<double>();
+    start_mode = doc["start_mode"].as<int>();
 
 #else
 
@@ -78,13 +82,11 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     parser.GetNextDocument(doc);
 
     RAVELOG_INFO("[SBPLBasePlanner] Parsing\n");
-
+    doc["start_mode"] >> start_mode;
     doc["linear_weight"] >> linear_weight;
     doc["angle_weight"] >> angle_weight;
     doc["mode_weight"] >> mode_weight;
-    RAVELOG_INFO("[SBPLBasePlanner] before loading : extents : %0.3f\n", extents.xmin);
     doc["extents"] >> extents;
-    RAVELOG_INFO("[SBPLBasePlanner] after loading : extents : %0.3f\n", extents.xmin);
     doc["cellsize"] >> cellsize;
     doc["numangles"] >> numangles;
     doc["nummodes"] >> nummodes;
@@ -109,7 +111,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     }
 #endif
 
-    std::cout << "t3" << std::endl;
+    RAVELOG_INFO("[SBPLBasePlanner] start mode : %d\n", start_mode);
     RAVELOG_INFO("[SBPLBasePlanner] extents : %0.3f\n", extents.xmin);
     RAVELOG_INFO("[SBPLBasePlanner] angle weight: %0.3f\n", angle_weight);
     RAVELOG_INFO("[SBPLBasePlanner] mode weight: %0.3f\n", mode_weight);
@@ -118,7 +120,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
     RAVELOG_INFO("[SBPLBasePlanner] Return first: %s\n", (_return_first ? "True" : "False") );
 
-    _env->Initialize(cellsize, extents, numangles, actions, linear_weight, angle_weight, mode_weight, nummodes ); //env qu'on def comme on veut, ici 7d
+    _env->Initialize(cellsize, extents, numangles, actions, linear_weight, angle_weight, mode_weight, nummodes, start_mode); //env qu'on def comme on veut, ici 7d
     _planner = boost::make_shared<ARAPlanner>(_env.get(), true);
 
     return true;
@@ -146,7 +148,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     /* Setup the start point for the plan */
     try{
 
-        std::vector<OpenRAVE::dReal> start_vals(6);
+        std::vector<OpenRAVE::dReal> start_vals(7);
         OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_vals.begin(),
           _robot->GetTransform(), OpenRAVE::DOF_Transform);
 
@@ -156,8 +158,12 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         }
         std::cout <<std::endl;
 
-        // On recupere les DOF, qu'on converti en position / orientation. Ici on part du mode 1 ( openrave ne connait pas les modes )
-        int start_id = _env->SetStart(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5],1);
+      // Add starting pos, a bit different of the real start state. See if useful or not
+        WorldCoordinate start_pos(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], 1);
+        _cart_path.push_back(start_pos);
+
+        // On recupere les DOF, qu'on converti en position / orientation. 
+        int start_id = _env->SetStart(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5]);
 
         if( start_id < 0 || _planner->set_start(start_id) == 0){
             RAVELOG_ERROR("[SBPLBasePlanner] Failed to set start state\n");
@@ -172,15 +178,8 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     /* Setup the goal point for the plan */
     try{
 
-        // Get the configuration specification and the goal from the parameters and turn
-        // it into an x,y,theta
         std::vector<OpenRAVE::dReal> goal_vals;
 
-        // NOTE: This is the correct thing to do, but openrave doesn't support an affine config spec for the parameters
-        //_params->_configurationspecification.ExtractAffineValues(goal_vals.begin(),
-        //                                                         _params->vgoalconfig.begin(),
-        //                                                         _robot,
-        //                                                         OpenRAVE::DOF_X | OpenRAVE::DOF_Y | OpenRAVE::DOF_RotationAxis);
         goal_vals = _params->vgoalconfig;
 
         if(goal_vals.size() != 7){
@@ -188,7 +187,6 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
             return OpenRAVE::PS_Failed;
         }
 
-        // Set mode goal_mode to -1 : no constraints on the mode // AF, for now 1 by default
         int goal_id = _env->SetGoal(goal_vals[0], goal_vals[1], goal_vals[2],goal_vals[3], goal_vals[4], goal_vals[5], goal_vals[6]);
         if( goal_id < 0 || _planner->set_goal(goal_id) == 0){
             RAVELOG_ERROR("[SBPLBasePlanner] Failed to set goal state\n");
@@ -224,7 +222,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
             ptraj->Init(config_spec);
             std::vector<PlannedWaypointPtr> xyzA_path;
 
-            _env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path, _path_cost, _cart_path);         
+            _env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path, _path_cost, _cart_path, _list_actions);         
             
             for(unsigned int idx=0; idx < xyzA_path.size(); idx++){
 
@@ -347,23 +345,52 @@ bool SBPLBasePlanner::GetPathCost(std::ostream &out, std::istream &in){
     return true;
 }
 
+// state 0 : defined by hand, state 1 and next : the simulate position
 bool SBPLBasePlanner::GetCartPath(std::ostream &out, std::istream &in){
 
     RAVELOG_INFO("[SBPLBasePlanner] Using GetCartPath\n");
 
         YAML::Emitter emitter;
-        emitter << YAML::BeginMap;
-        for(unsigned int i=0;i<_cart_path.size();i++) {
-          out << YAML::Key << "step";
-          out << YAML::Value << i;
-          out << YAML::Key << "pos";
-          out << YAML::Value << YAML::BeginSeq << 
+        
+        emitter << YAML::BeginSeq;
+        for(int i=0;i<_cart_path.size();i++) {
+          emitter << YAML::BeginMap;
+          emitter << YAML::Key << "state";
+          emitter << YAML::Value << i;
+          emitter << YAML::Key << "position";
+          emitter << YAML::Value << YAML::BeginSeq << 
           _cart_path[i].x << _cart_path[i].y <<_cart_path[i].z << 
           _cart_path[i].phi <<_cart_path[i].theta << _cart_path[i].psi <<
         _cart_path[i].mode << YAML::EndSeq;
-        }
         emitter << YAML::EndMap;
+        }
+        emitter << YAML::EndSeq;
+    
         out << emitter.c_str();
+    return true;
+}
 
+// step x mean it's the action to go from state x to state x+1
+bool SBPLBasePlanner::GetListActions(std::ostream &out, std::istream &in){
+
+    RAVELOG_INFO("[SBPLBasePlanner] Using GetListActions\n");
+
+        YAML::Emitter emitter;
+        
+        emitter << YAML::BeginSeq;
+        for(int i=0;i<_cart_path.size()-2;i++) { // -1 because one less action than number of states
+          emitter << YAML::BeginMap;
+          emitter << YAML::Key << "step";
+          emitter << YAML::Value << i+1;
+          emitter << YAML::Key << "action";
+          emitter << YAML::Value << YAML::BeginSeq << 
+          _list_actions[i].x << _list_actions[i].y <<_list_actions[i].z << 
+          _list_actions[i].phi <<_list_actions[i].theta << _list_actions[i].psi <<
+        _list_actions[i].mode << YAML::EndSeq;
+        emitter << YAML::EndMap;
+        }
+        emitter << YAML::EndSeq;
+    
+        out << emitter.c_str();
     return true;
 }
