@@ -17,9 +17,13 @@
 using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
-OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(10.0), 
+OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(10.0), _path_cost(-1.0),
 _epsinit(5.0), _epsdec(0.2), _return_first(false) {
 
+ RegisterCommand("GetPathCost", boost::bind(&SBPLBasePlanner::GetPathCost, this, _1, _2),
+                    "Get the cost of the plan");
+RegisterCommand("GetCartPath", boost::bind(&SBPLBasePlanner::GetCartPath, this, _1, _2),
+                    "Get cartesian path");
 }
 
 SBPLBasePlanner::~SBPLBasePlanner() {
@@ -44,15 +48,15 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     double cellsize = 0.0;
 
     int numangles = 0;
-    int nummodes = 3;  //a recuperer from the yaml
+    int nummodes = 3;  
 
     EnvironmentExtents extents;    
     ActionList actions;
 
 #ifdef YAMLCPP_NEWAPI
 
-    //YAML::Node doc = YAML::Load(extra_stream);
-    YAML::Node doc = YAML::LoadFile("/home/gquere/pr_catkin/src/or_sbpl_for_ada/yaml/actions.yaml");
+    YAML::Node doc = YAML::Load(extra_stream);
+    //YAML::Node doc = YAML::LoadFile("/home/gquere/pr_catkin/src/or_sbpl_for_ada/yaml/actions.yaml");
 
     cellsize = doc["cellsize"].as<double>();
     linear_weight = doc["linear_weight"].as<double>();
@@ -78,7 +82,9 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     doc["linear_weight"] >> linear_weight;
     doc["angle_weight"] >> angle_weight;
     doc["mode_weight"] >> mode_weight;
+    RAVELOG_INFO("[SBPLBasePlanner] before loading : extents : %0.3f\n", extents.xmin);
     doc["extents"] >> extents;
+    RAVELOG_INFO("[SBPLBasePlanner] after loading : extents : %0.3f\n", extents.xmin);
     doc["cellsize"] >> cellsize;
     doc["numangles"] >> numangles;
     doc["nummodes"] >> nummodes;
@@ -125,8 +131,6 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, std::istream& input
 
 
 OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr ptraj) {
-
-    double _path_cost=-1;
 
     RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
@@ -191,7 +195,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
             return OpenRAVE::PS_Failed;
         }
 
-    }catch( SBPL_Exception e ){
+    } catch( SBPL_Exception e ){
         RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while setting the goal state\n");
         return OpenRAVE::PS_Failed;
     }
@@ -220,9 +224,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
             ptraj->Init(config_spec);
             std::vector<PlannedWaypointPtr> xyzA_path;
 
-            _path_cost=_env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path);
-           
-            AddWaypoint(ptraj, config_spec,_path_cost,0, 0, 0, 0, 0, 0);
+            _env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path, _path_cost, _cart_path);         
             
             for(unsigned int idx=0; idx < xyzA_path.size(); idx++){
 
@@ -332,4 +334,36 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     // Insert the point
     ptraj->Insert(idx, point, true);
     
+}
+
+bool SBPLBasePlanner::GetPathCost(std::ostream &out, std::istream &in){
+
+    RAVELOG_INFO("[SBPLBasePlanner] Using GetPathCost\n");
+        YAML::Emitter emitter;
+        emitter << YAML::BeginSeq;
+        emitter << _path_cost;
+        emitter << YAML::EndSeq;
+        out << emitter.c_str();
+    return true;
+}
+
+bool SBPLBasePlanner::GetCartPath(std::ostream &out, std::istream &in){
+
+    RAVELOG_INFO("[SBPLBasePlanner] Using GetCartPath\n");
+
+        YAML::Emitter emitter;
+        emitter << YAML::BeginMap;
+        for(unsigned int i=0;i<_cart_path.size();i++) {
+          out << YAML::Key << "step";
+          out << YAML::Value << i;
+          out << YAML::Key << "pos";
+          out << YAML::Value << YAML::BeginSeq << 
+          _cart_path[i].x << _cart_path[i].y <<_cart_path[i].z << 
+          _cart_path[i].phi <<_cart_path[i].theta << _cart_path[i].psi <<
+        _cart_path[i].mode << YAML::EndSeq;
+        }
+        emitter << YAML::EndMap;
+        out << emitter.c_str();
+
+    return true;
 }

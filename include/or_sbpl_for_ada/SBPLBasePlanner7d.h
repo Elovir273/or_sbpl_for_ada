@@ -67,14 +67,19 @@ namespace or_sbpl_for_ada {
 
 	void AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec,
 			 const double &x, const double &y, const double &z, const double &theta, const double &phi,const double &psi,const int &mode) const;
+	bool GetPathCost(std::ostream &out, std::istream &in);
+	bool GetCartPath(std::ostream &out, std::istream &in);
 
-
+	
         OpenRAVE::EnvironmentBasePtr _orenv;
         OpenRAVE::RobotBasePtr _robot;
         PlannerParametersConstPtr _params;
         SBPLPlannerPtr _planner;
         SBPLBasePlannerEnvironmentPtr _env;
+
+        std::vector<WorldCoordinate> _cart_path;
         
+    double _path_cost;    
 	double _maxtime;
 	double _epsinit;
 	double _epsdec;

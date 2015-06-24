@@ -169,8 +169,9 @@ namespace or_sbpl_for_ada {
 	 * @param state_ids The list of state ids that make up the path
 	 * @param path The converted path
 	 */
-        virtual double ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
-							std::vector<PlannedWaypointPtr> &path);
+        virtual void ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
+							std::vector<PlannedWaypointPtr> &path, double &path_cost,
+							std::vector<WorldCoordinate> &cart_path );
         
 	/**
 	 * Converts from a grid coordinate to a world coordinate

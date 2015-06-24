@@ -29,7 +29,7 @@ bool Action7d::apply(const WorldCoordinate &wc, const OpenRAVE::RobotBasePtr &ro
 
 std::vector<WorldCoordinate> Action7d::applyWithIntermediates(const WorldCoordinate &wc,
                                                                   const OpenRAVE::RobotBasePtr &robot) const {
-std::vector<WorldCoordinate> intermediates;
+    std::vector<WorldCoordinate> intermediates;
 
     // Create a robot state saver
     OpenRAVE::RobotBase::RobotStateSaver rStateSaver(robot);
@@ -37,23 +37,10 @@ std::vector<WorldCoordinate> intermediates;
     // Initialize the list of intermediate points
     
     bool valid = true;
+
+    // Only one new position for each action, not a succession. It's an array with only one element.
     WorldCoordinate next_pos=_pts[0];
     WorldCoordinate wc_current(wc);
-
-/*
-        if ( next_pos.mode != wc.mode ) {
-            if ( next_pos.x==0 && next_pos.y==0 && next_pos.z==0 && next_pos.theta==0 && next_pos.phi==0 && next_pos.psi == 0 ) {
-                wc_current.mode=next_pos.mode;
-            }
-            else {
-            intermediates.clear();
-            return intermediates;
-            }
-        }
-        else {
-*/
-      //  std::cout << wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "
-      //    <<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
 
         double coef_pos=0.01;
         double coef_angle=0.4; 

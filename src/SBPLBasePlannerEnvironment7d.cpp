@@ -145,13 +145,14 @@ int SBPLBasePlannerEnvironment::SetGoal(const double &x, const double &y, const 
 }
 
 // Return the cost of the best path of this mode
-double SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
-                                                                    std::vector<PlannedWaypointPtr> &path) {
+void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
+                                                                    std::vector<PlannedWaypointPtr> &path, double &path_cost,
+                                                                    std::vector<WorldCoordinate> &cart_path ) {
       
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Begin ConvertStateIDPathIntoXYThetaPath\n");
 
-    double path_cost = 0;
+    double path_cost_temp = 0;
     // clear out the vector just in case
     path.clear();
 
@@ -182,7 +183,7 @@ double SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std:
             }
         }
 
-        path_cost+=best_cost;
+        path_cost_temp+=best_cost;
         // If we didn't find a successor something has gone terribly wrong, bail
         if(best_idx == -1){
             RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Failed to reconstruct path.");
@@ -192,13 +193,16 @@ double SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std:
         // Play the action forward, setting all the intermediate states
         ActionPtr a = actions[best_idx];
 
- 
+
         GridCoordinate gc = StateId2CoordTable[start_id];
        // std::cout<<"                                           Traj (grid) : "
        // <<gc.x<<" "<<gc.y<<" "<<gc.z<<" "<<gc.phi<<" "<<gc.theta<<" "<<gc.psi<<std::endl;
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
         std::cout<<"    Traj (world) : "
         <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
+     
+        cart_path.push_back(wc_current);
+
         std::vector<WorldCoordinate> pts = a->applyWithIntermediates(wc_current, _robot);
 
         BOOST_FOREACH(WorldCoordinate wc_next, pts){
@@ -207,9 +211,10 @@ double SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std:
             path.push_back(pt);
         }
     }
+    path_cost=path_cost_temp;
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Generated path of length %d\n", path.size());
-    return path_cost;
+    return;
 }
 
 int SBPLBasePlannerEnvironment::GetFromToHeuristic(int FromStateID, int ToStateID){
@@ -280,10 +285,6 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
     // Now step through each of the actions
     //std::vector<ActionPtr> actions = _actions[gc.theta];
     std::vector<ActionPtr> actions = _actions[gc.mode];
-
-
-  //  std::cout << "Ltest : "<< actions.size() << std::endl;
-
 
     BOOST_FOREACH(ActionPtr a, actions) {
 
