@@ -15,6 +15,8 @@ SBPLBasePlannerEnvironment::SBPLBasePlannerEnvironment(OpenRAVE::RobotBasePtr ro
     _lweight = 10;
     _tweight = 10;   
     _mweight = 10;
+
+    _start_mode = 0;
 }
 
 SBPLBasePlannerEnvironment::~SBPLBasePlannerEnvironment() {
@@ -76,9 +78,10 @@ bool SBPLBasePlannerEnvironment::InitializeEnv(const char* sEnvFile) {
     throw new SBPL_Exception();
 }
 
+// No idea what this is for, isn't used anywhere
 bool SBPLBasePlannerEnvironment::InitializeMDPCfg(MDPConfig* MDPCfg) {
 
-    MDPCfg->goalstateid = _goal;
+    MDPCfg->goalstateid = _goal[0];
     MDPCfg->startstateid = _start;
 
     return true;
@@ -113,15 +116,18 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
     return state_id;
 }
 
-int SBPLBasePlannerEnvironment::SetGoal(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi, const int &mode) {
-
-    //Temporary : single goal for now. multiples later
-    int temp_mode=mode;
-    if (temp_mode == -1) {
-        temp_mode=1;
+std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> goal_vals) {
+    
+    if (goal_vals.size()%7 != 0 ) {
+        RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Goals values are not specified correctly ( not a mutliple of 7 ) \n");
+        throw new SBPL_Exception();
     }
+    std::vector<int> goals_id;
 
-    WorldCoordinate wc(x, y, z, phi, theta, psi, temp_mode);
+    for (int i=0;i<goal_vals.size()/7;i++) {
+        double x=goal_vals[7*i],y=goal_vals[7*i+1],z=goal_vals[7*i+2],phi=goal_vals[7*i+3],theta=goal_vals[7*i+4],psi=goal_vals[7*i+5],mode=goal_vals[7*i+6];
+
+    WorldCoordinate wc(x, y, z, phi, theta, psi, mode);
     GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
     int idx = GridCoordinateToStateIndex(gc);
@@ -139,11 +145,13 @@ int SBPLBasePlannerEnvironment::SetGoal(const double &x, const double &y, const 
         state_id = it->second;
     }
 
-    _goal = state_id;
+    _goal.push_back(state_id); //_goal = state_id;
+    goals_id.push_back(state_id);
+    
 
-    RAVELOG_INFO("[SBPLBasePlannerEnvironment] Set goal to id: %d\n", _goal);
-
-    return state_id;
+    RAVELOG_INFO("[SBPLBasePlannerEnvironment] Set goal %d to id: %d\n", i,_goal[0]);
+    }
+    return goals_id;
 }
 
 // Return the cost of the best path of this mode
@@ -249,8 +257,16 @@ int SBPLBasePlannerEnvironment::GetFromToHeuristic(int FromStateID, int ToStateI
 
 }
 
-int SBPLBasePlannerEnvironment::GetGoalHeuristic(int stateID){
-    return GetFromToHeuristic(stateID, _goal);
+int SBPLBasePlannerEnvironment::GetGoalHeuristic(int stateID) {
+    int min_heuristic = GetFromToHeuristic(stateID, _goal[0]);
+    int res = 0;
+    if (_goal.size() > 1 ) {
+    for (int i=1;i<_goal.size();i++) {
+        res = GetFromToHeuristic(stateID, _goal[i]);
+        if ( res < min_heuristic ) { min_heuristic = res;}
+    }
+    }
+    return min_heuristic;
 }
 
 int SBPLBasePlannerEnvironment::GetStartHeuristic(int stateID){
@@ -276,9 +292,11 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
     }
 
     // If this is the goal state, just return
-    if( SourceStateID == _goal ){
+    for (int i=0;i<_goal.size();i++) {
+    if( SourceStateID == _goal[i] ){
         RAVELOG_INFO("[SBPLBasePlanningEnvironment] Expanded goal. Returning.\n");
         return;
+    }
     }
 
     // Convert to a world coordinate

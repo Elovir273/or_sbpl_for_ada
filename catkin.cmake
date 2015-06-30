@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(or_sbpl_for_ada)
 
 find_package(catkin REQUIRED COMPONENTS openrave_catkin)
+
 catkin_package(
     INCLUDE_DIRS include/
     LIBRARIES ${PROJECT_NAME}
@@ -11,7 +12,6 @@ find_package(OpenRAVE REQUIRED)
 
 include(FindPkgConfig)
 pkg_check_modules(SBPL REQUIRED sbpl)
-
 pkg_check_modules(YamlCpp REQUIRED yaml-cpp)
 
 if (${YamlCpp_VERSION} VERSION_LESS 0.5.0)
@@ -23,10 +23,13 @@ endif ()
 include_directories(
   include
   ${OpenRAVE_INCLUDE_DIRS}
-  ${SBPL_INCLUDE_DIRS}
+  SBPL_INCLUDE_DIRS}
   ${Yaml_INCLUDE_DIRS})
 
-link_directories(${OpenRAVE_LIBRARY_DIRS} ${SBPL_LIBRARY_DIRS} ${Yaml_LIBRARY_DIRS})
+link_directories(
+  ${OpenRAVE_LIBRARY_DIRS} 
+  ${SBPL_LIBRARY_DIRS} 
+  ${Yaml_LIBRARY_DIRS})
 
 add_library(${PROJECT_NAME} 
   src/SBPLBasePlanner7d.cpp 
@@ -37,11 +40,16 @@ add_library(${PROJECT_NAME}
   src/Action7d.cpp)
 
 target_link_libraries(${PROJECT_NAME}
-    ${SBPL_LIBRARIES} ${OpenRAVE_LIBRARIES} ${Yaml_LIBRARIES})
+    ${SBPL_LIBRARIES} 
+    ${OpenRAVE_LIBRARIES} 
+    ${Yaml_LIBRARIES})
 
 openrave_plugin(${PROJECT_NAME}_plugin src/SBPLMain.cpp)
 target_link_libraries(${PROJECT_NAME}_plugin
-    ${PROJECT_NAME} yaml-cpp ${SBPL_LIBRARIES} ${OpenRAVE_LIBRARIES})
+    ${PROJECT_NAME} 
+    yaml-cpp 
+    ${SBPL_LIBRARIES} 
+    ${OpenRAVE_LIBRARIES})
 
 add_executable(yamltest2
   test/YamlTest2.cpp

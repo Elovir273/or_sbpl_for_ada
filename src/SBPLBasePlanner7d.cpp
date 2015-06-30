@@ -159,7 +159,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         std::cout <<std::endl;
 
       // Add starting pos, a bit different of the real start state. See if useful or not
-        WorldCoordinate start_pos(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], 1);
+        WorldCoordinate start_pos(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], 0);
         _cart_path.push_back(start_pos);
 
         // On recupere les DOF, qu'on converti en position / orientation. 
@@ -182,13 +182,22 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 
         goal_vals = _params->vgoalconfig;
 
+/* Here multiple goals but goal_vals simple vector, can't check for size
         if(goal_vals.size() != 7){
             RAVELOG_ERROR("[SBPLBasePlanner] Unable to extract goal of appropriate size.\n");
             return OpenRAVE::PS_Failed;
         }
+*/
+        
+        std::vector<int> goals_id = _env->SetGoal(goal_vals);
 
-        int goal_id = _env->SetGoal(goal_vals[0], goal_vals[1], goal_vals[2],goal_vals[3], goal_vals[4], goal_vals[5], goal_vals[6]);
-        if( goal_id < 0 || _planner->set_goal(goal_id) == 0){
+        bool bset_goal=true;
+        for (int i=0;i<goals_id.size();i++) {
+            if (_planner->set_goal(goals_id[i]) == 0 )
+            bset_goal=false;
+        }
+
+        if( goals_id.size() == 0 || bset_goal==false) {
             RAVELOG_ERROR("[SBPLBasePlanner] Failed to set goal state\n");
             return OpenRAVE::PS_Failed;
         }

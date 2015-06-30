@@ -57,6 +57,7 @@ namespace or_sbpl_for_ada {
 	
 	/**
 	 * Sets the start and the goal states in the MDPCfg 
+	 * ( Multinomial Dirichlet Probabilistic Context-free Grammar ( natural language parser ) )
 	 */
         virtual bool InitializeMDPCfg(MDPConfig* MDPCfg);
 
@@ -161,8 +162,7 @@ namespace or_sbpl_for_ada {
 	 * @param theta The yaw of the goal
 	 * @return The associated state id
 	 */
-        virtual int SetGoal(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi, const int &mode);
-
+       virtual std::vector<int> SetGoal(const std::vector<double> goal_vals);
 	/**
 	 * Returns x,y,theta-coords for each point along the path.
 	 * 
@@ -258,7 +258,7 @@ namespace or_sbpl_for_ada {
         double _cellsize;
         double _anglesize;
 
-        int _goal;
+        std::vector<int> _goal;
         int _start;
 
         int _gridheight;
