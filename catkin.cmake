@@ -11,7 +11,7 @@ catkin_package(
 find_package(OpenRAVE REQUIRED)
 
 include(FindPkgConfig)
-pkg_check_modules(SBPL REQUIRED sbpl)
+pkg_check_modules(SBPL REQUIRED sbpl_multiple_goals)
 pkg_check_modules(YamlCpp REQUIRED yaml-cpp)
 
 if (${YamlCpp_VERSION} VERSION_LESS 0.5.0)
