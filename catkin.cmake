@@ -11,7 +11,7 @@ catkin_package(
 find_package(OpenRAVE REQUIRED)
 
 include(FindPkgConfig)
-pkg_check_modules(SBPL REQUIRED sbpl_multiple_goals)
+pkg_check_modules(SBPL REQUIRED sbpl)
 pkg_check_modules(YamlCpp REQUIRED yaml-cpp)
 
 if (${YamlCpp_VERSION} VERSION_LESS 0.5.0)
@@ -23,14 +23,14 @@ endif ()
 include_directories(
   include
   ${OpenRAVE_INCLUDE_DIRS}
-  SBPL_INCLUDE_DIRS}
+  ${SBPL_INCLUDE_DIRS}
   ${Yaml_INCLUDE_DIRS})
 
 link_directories(
   ${OpenRAVE_LIBRARY_DIRS} 
   ${SBPL_LIBRARY_DIRS} 
   ${Yaml_LIBRARY_DIRS})
-
+ 
 add_library(${PROJECT_NAME} 
   src/SBPLBasePlanner7d.cpp 
   src/SBPLBasePlannerEnvironment7d.cpp 

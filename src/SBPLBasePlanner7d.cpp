@@ -17,7 +17,7 @@
 using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
-OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(10.0), _path_cost(-1.0),
+OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(20.0), _path_cost(-1.0),
 _epsinit(5.0), _epsdec(0.2), _return_first(false) {
 
 RegisterCommand("GetPathCost", boost::bind(&SBPLBasePlanner::GetPathCost, this, _1, _2),
@@ -33,8 +33,6 @@ SBPLBasePlanner::~SBPLBasePlanner() {
 }
 
 bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersConstPtr params) {
-
-    std::cout << "t1" << std::endl;
 
     _robot = robot;
     _params = params;
@@ -64,9 +62,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     cellsize = doc["cellsize"].as<double>();
     linear_weight = doc["linear_weight"].as<double>();
     mode_weight = doc["mode_weight"].as<double>();
-    std::cout << "before lec : "<< extents.xmin << " " << extents.xmax<< std::endl;
     doc["extents"] >> extents;
-    std::cout << "after lec : "<<extents.xmin << " " << extents.xmax<< std::endl;
     angle_weight = doc["angle_weight"].as<double>();
     numangles = doc["numangles"].as<int>();
     nummodes = doc["nummodes"].as<int>();
@@ -136,28 +132,28 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 
     RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
-    std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
+   // std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
     std::vector<OpenRAVE::dReal> v;
     _robot->GetDOFValues(v);
-    std::cout << "_robot->GetDOFValues() : " ;
-    for (int temp1=0;temp1<v.size();temp1++) {
+   // std::cout << "_robot->GetDOFValues() : " ;
+ /*   for (int temp1=0;temp1<v.size();temp1++) {
         std::cout << v[temp1] << " ";
     }
     std::cout <<std::endl;
-
+*/
     /* Setup the start point for the plan */
     try{
 
         std::vector<OpenRAVE::dReal> start_vals(7);
         OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_vals.begin(),
           _robot->GetTransform(), OpenRAVE::DOF_Transform);
-
+        /*
        std::cout << " start values : " ;
         for (int temp2=0;temp2<start_vals.size();temp2++) {
             std::cout << start_vals[temp2] << " ";
         }
         std::cout <<std::endl;
-
+        */
       // Add starting pos, a bit different of the real start state. See if useful or not
         WorldCoordinate start_pos(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], 0);
         _cart_path.push_back(start_pos);

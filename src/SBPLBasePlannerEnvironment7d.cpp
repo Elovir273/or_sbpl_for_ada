@@ -60,14 +60,12 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
     // Actions
     _actions = actions;
 
-     std::cout << "anglesize : "<<_anglesize << std::endl;
-
      unsigned long int space_size=_gridwidth*_gridheight*_griddepth*_nummodes*_numangles*_numangles*_numangles;
      unsigned long int max_int = 2147483647;
      if ( space_size > max_int ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Error : Space size > size int. \n");
      }
-     std::cout << "space size : "<< space_size << std::endl;
+     // std::cout << "space size : "<< space_size << std::endl;
 
     return true;
 }
@@ -90,11 +88,12 @@ bool SBPLBasePlannerEnvironment::InitializeMDPCfg(MDPConfig* MDPCfg) {
 int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi) {
 
     WorldCoordinate wc(x, y, z, phi, theta, psi, _start_mode);
+    std::cout << "start : "<< wc << std::endl;
     GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set start to grid coordinate: %s\n", gc.toString().c_str());
     int idx = GridCoordinateToStateIndex(gc);
-    std::cout << "setstart, idx : "<<idx<<std::endl;
+   // std::cout << "setstart, idx : "<<idx<<std::endl;
 
     if( idx == INVALID_INDEX ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] The start state %s is invalid.\n", gc.toString().c_str() );
@@ -117,7 +116,9 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
 }
 
 std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> goal_vals) {
-    
+
+    std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
+
     if (goal_vals.size()%7 != 0 ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Goals values are not specified correctly ( not a mutliple of 7 ) \n");
         throw new SBPL_Exception();
@@ -208,8 +209,8 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         GridCoordinate gc = StateId2CoordTable[start_id];
     
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
-        std::cout<<"    Traj (world) : "
-        <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
+     //   std::cout<<"    Traj (world) : "
+      //  <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
      
         // Add initial state
           if ( pidx == 0 )  {
@@ -327,7 +328,9 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
             int state_idx = GridCoordinateToStateIndex(gc_final);
          //   std::cout << "Ltest3 : "<< state_idx << std::endl;
 	    if(state_idx == orig_idx){
-		RAVELOG_WARN("[SBPLBasePlanningEnvironment] Action did not move from original grid cell. Check primitives for validity.\n");
+     //   std::cout << wc << std::endl; 
+     //   std::cout << wc_final << std::endl<< std::endl;
+		//RAVELOG_WARN("[SBPLBasePlanningEnvironment] Action did not move from original grid cell. Check primitives for validity.\n");
 		continue;
 	    }
 
