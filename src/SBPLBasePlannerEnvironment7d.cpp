@@ -88,7 +88,7 @@ bool SBPLBasePlannerEnvironment::InitializeMDPCfg(MDPConfig* MDPCfg) {
 int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi) {
 
     WorldCoordinate wc(x, y, z, phi, theta, psi, _start_mode);
-    std::cout << "start : "<< wc << std::endl;
+   // std::cout << "start : "<< wc << std::endl;
     GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set start to grid coordinate: %s\n", gc.toString().c_str());
@@ -117,7 +117,7 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
 
 std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> goal_vals) {
 
-    std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
+  //  std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
 
     if (goal_vals.size()%7 != 0 ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Goals values are not specified correctly ( not a mutliple of 7 ) \n");

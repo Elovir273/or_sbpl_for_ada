@@ -20,12 +20,12 @@ SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
 OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(20.0), _path_cost(-1.0),
 _epsinit(5.0), _epsdec(0.2), _return_first(false) {
 
-RegisterCommand("GetPathCost", boost::bind(&SBPLBasePlanner::GetPathCost, this, _1, _2),
-                    "Get the cost of the plan");
-RegisterCommand("GetCartPath", boost::bind(&SBPLBasePlanner::GetCartPath, this, _1, _2),
-                    "Get cartesian path");
-RegisterCommand("GetListActions", boost::bind(&SBPLBasePlanner::GetListActions, this, _1, _2),
-                    "Get the list of actions");
+    RegisterCommand("GetPathCost", boost::bind(&SBPLBasePlanner::GetPathCost, this, _1, _2),
+        "Get the cost of the plan");
+    RegisterCommand("GetCartPath", boost::bind(&SBPLBasePlanner::GetCartPath, this, _1, _2),
+        "Get cartesian path");
+    RegisterCommand("GetListActions", boost::bind(&SBPLBasePlanner::GetListActions, this, _1, _2),
+        "Get the list of actions");
 
 }
 
@@ -133,27 +133,35 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
    // std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
-    std::vector<OpenRAVE::dReal> v;
-    _robot->GetDOFValues(v);
-   // std::cout << "_robot->GetDOFValues() : " ;
- /*   for (int temp1=0;temp1<v.size();temp1++) {
-        std::cout << v[temp1] << " ";
-    }
-    std::cout <<std::endl;
-*/
+
+
     /* Setup the start point for the plan */
     try{
 
-        std::vector<OpenRAVE::dReal> start_vals(7);
+        std::vector<OpenRAVE::dReal> start_vals(6);
+
+        OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
+
+
         OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_vals.begin(),
-          _robot->GetTransform(), OpenRAVE::DOF_Transform);
-        /*
-       std::cout << " start values : " ;
+          manip->GetEndEffectorTransform(), OpenRAVE::DOF_Transform);
+
+        std::vector<OpenRAVE::dReal> v;
+        _robot->GetDOFValues(v);
+/*
+        std::cout << "_robot->GetDOFValues() : " ;
+        for (int temp1=0;temp1<v.size();temp1++) {
+            std::cout << v[temp1] << " ";
+        }
+*//*
+        std::cout <<std::endl;
+        std::cout << "start values : " ;
         for (int temp2=0;temp2<start_vals.size();temp2++) {
             std::cout << start_vals[temp2] << " ";
         }
         std::cout <<std::endl;
-        */
+*/
+        
       // Add starting pos, a bit different of the real start state. See if useful or not
         WorldCoordinate start_pos(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], 0);
         _cart_path.push_back(start_pos);
@@ -190,7 +198,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         bool bset_goal=true;
         for (int i=0;i<goals_id.size();i++) {
             if (_planner->set_goal(goals_id[i]) == 0 )
-            bset_goal=false;
+                bset_goal=false;
         }
 
         if( goals_id.size() == 0 || bset_goal==false) {
@@ -222,7 +230,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 
             /* Write out the trajectory to return back to the caller */
             OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_Transform,
-               _robot, "linear");
+             _robot, "linear");
             config_spec.AddDerivativeGroups(1, true);  //velocity group, add delta time group
             ptraj->Init(config_spec);
             std::vector<PlannedWaypointPtr> xyzA_path;
@@ -324,8 +332,8 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 
     OpenRAVE::RaveTransformMatrix<double> R;
     R.rotfrommat(res[0][0], res[0][1], res[0][2],
-     res[1][0], res[1][1] ,res[1][2] ,
-     res[2][0],res[2][1] ,res[2][2] );
+       res[1][0], res[1][1] ,res[1][2] ,
+       res[2][0],res[2][1] ,res[2][2] );
 
     OpenRAVE::RaveVector<double> trans(x, y, z); 
     OpenRAVE::RaveTransform<double> transform(OpenRAVE::geometry::quatFromMatrix(R), trans);
@@ -342,11 +350,11 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 bool SBPLBasePlanner::GetPathCost(std::ostream &out, std::istream &in){
 
     RAVELOG_INFO("[SBPLBasePlanner] Using GetPathCost\n");
-        YAML::Emitter emitter;
-        emitter << YAML::BeginSeq;
-        emitter << _path_cost;
-        emitter << YAML::EndSeq;
-        out << emitter.c_str();
+    YAML::Emitter emitter;
+    emitter << YAML::BeginSeq;
+    emitter << _path_cost;
+    emitter << YAML::EndSeq;
+    out << emitter.c_str();
     return true;
 }
 
@@ -355,24 +363,24 @@ bool SBPLBasePlanner::GetCartPath(std::ostream &out, std::istream &in){
 
     RAVELOG_INFO("[SBPLBasePlanner] Using GetCartPath\n");
 
-        YAML::Emitter emitter;
-        
-        emitter << YAML::BeginSeq;
-        for(int i=0;i<_cart_path.size();i++) {
-          emitter << YAML::BeginMap;
-          emitter << YAML::Key << "state";
-          emitter << YAML::Value << i;
-          emitter << YAML::Key << "position";
-          emitter << YAML::Value << YAML::BeginSeq << 
-          _cart_path[i].x << _cart_path[i].y <<_cart_path[i].z << 
-          _cart_path[i].phi <<_cart_path[i].theta << _cart_path[i].psi <<
-        _cart_path[i].mode << YAML::EndSeq;
-        emitter << YAML::EndMap;
-        }
-        emitter << YAML::EndSeq;
-    
-        out << emitter.c_str();
-    return true;
+    YAML::Emitter emitter;
+
+    emitter << YAML::BeginSeq;
+    for(int i=0;i<_cart_path.size();i++) {
+      emitter << YAML::BeginMap;
+      emitter << YAML::Key << "state";
+      emitter << YAML::Value << i;
+      emitter << YAML::Key << "position";
+      emitter << YAML::Value << YAML::BeginSeq << 
+      _cart_path[i].x << _cart_path[i].y <<_cart_path[i].z << 
+      _cart_path[i].phi <<_cart_path[i].theta << _cart_path[i].psi <<
+      _cart_path[i].mode << YAML::EndSeq;
+      emitter << YAML::EndMap;
+  }
+  emitter << YAML::EndSeq;
+
+  out << emitter.c_str();
+  return true;
 }
 
 // step x mean it's the action to go from state x to state x+1
@@ -380,9 +388,9 @@ bool SBPLBasePlanner::GetListActions(std::ostream &out, std::istream &in){
 
     RAVELOG_INFO("[SBPLBasePlanner] Using GetListActions\n");
 
-        YAML::Emitter emitter;
-        
-        emitter << YAML::BeginSeq;
+    YAML::Emitter emitter;
+
+    emitter << YAML::BeginSeq;
         for(int i=0;i<_cart_path.size()-2;i++) { // -1 because one less action than number of states
           emitter << YAML::BeginMap;
           emitter << YAML::Key << "step";
@@ -391,11 +399,11 @@ bool SBPLBasePlanner::GetListActions(std::ostream &out, std::istream &in){
           emitter << YAML::Value << YAML::BeginSeq << 
           _list_actions[i].x << _list_actions[i].y <<_list_actions[i].z << 
           _list_actions[i].phi <<_list_actions[i].theta << _list_actions[i].psi <<
-        _list_actions[i].mode << YAML::EndSeq;
-        emitter << YAML::EndMap;
-        }
-        emitter << YAML::EndSeq;
-    
-        out << emitter.c_str();
-    return true;
-}
+          _list_actions[i].mode << YAML::EndSeq;
+          emitter << YAML::EndMap;
+      }
+      emitter << YAML::EndSeq;
+
+      out << emitter.c_str();
+      return true;
+  }
