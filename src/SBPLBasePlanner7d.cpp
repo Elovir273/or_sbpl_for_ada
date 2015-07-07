@@ -161,7 +161,6 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         }
         std::cout <<std::endl;
 */
-        
       // Add starting pos, a bit different of the real start state. See if useful or not
         WorldCoordinate start_pos(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], 0);
         _cart_path.push_back(start_pos);

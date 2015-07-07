@@ -117,7 +117,7 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
 
 std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> goal_vals) {
 
-  //  std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
+    std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
 
     if (goal_vals.size()%7 != 0 ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Goals values are not specified correctly ( not a mutliple of 7 ) \n");
