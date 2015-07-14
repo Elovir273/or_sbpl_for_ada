@@ -2,16 +2,16 @@ cellsize: 0.01
 numangles: 8
 nummodes: 3
 timelimit: 100.0
-linear_weight: 1
-angle_weight: 1
-mode_weight: 2
+linear_weight: 95
+angle_weight: 7
+mode_weight: 5
 extents:
-- -0.2
-- 0.5
 - -0.5
-- 0.3
+- 0.5
 - -0.3
 - 0.5
+- -0.3
+- 0.8
 actions:
 - mode: 1
   primitives:

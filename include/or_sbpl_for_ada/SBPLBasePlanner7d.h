@@ -1,11 +1,15 @@
 #ifndef SBPL_BASE_PLANNER_H_
 #define SBPL_BASE_PLANNER_H_
 
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+
 #include <boost/shared_ptr.hpp>
 
 #include <sbpl/config.h>
 #include <sbpl/planners/planner.h>
 
+//#include <or_sbpl_for_ada/start_pos_listener.h>
 #include <or_sbpl_for_ada/SBPLBasePlannerEnvironment7d.h>
 
 #include <openrave/openrave.h>
@@ -65,6 +69,14 @@ namespace or_sbpl_for_ada {
 
     private:
 
+	void print_start_DOF();
+	void print_start_cart(std::vector<OpenRAVE::dReal> start_vals);
+	OpenRAVE::PlannerStatus best_mode( std::vector<OpenRAVE::dReal> start_vals, std::vector<float> &mode_cost, ReplanParams rparams );
+	OpenRAVE::PlannerStatus init_plan();
+	void start_listener();
+	void chatterCallback(const std_msgs::String::ConstPtr& msg);
+
+ 
 	void AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec,
 			 const double &x, const double &y, const double &z, const double &theta, const double &phi,const double &psi,const int &mode) const;
 	bool GetPathCost(std::ostream &out, std::istream &in);
@@ -84,13 +96,16 @@ namespace or_sbpl_for_ada {
 	double _maxtime;
 	double _epsinit;
 	double _epsdec;
+	int _n_axes;
 	bool _return_first;
-	
-        bool _initialized;
+	bool _initialized;
+    
     };
     
     typedef boost::shared_ptr<SBPLBasePlanner> SBPLBasePlannerPtr;
 
 }
-    
+
+
 #endif
+
