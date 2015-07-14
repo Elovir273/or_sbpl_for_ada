@@ -140,7 +140,6 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 
     while ( _start_pos.size() != 6 ) {
         sleep(1);
-        std::cout <<" vec : "<< _start_pos.size() << std::endl;
     }
 
     OpenRAVE::PlannerStatus planner_status;
@@ -151,27 +150,27 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     rparams.dec_eps = _epsdec;
     rparams.return_first_solution = _return_first;
     rparams.max_time = _maxtime;
-
+    std::vector<int> plan;
 //while(true) {
-    for ( int temp=0; temp < 20; temp++) {
+    for ( int temp=0; temp <10; temp++) {
 
-    //print_start_DOF();
-        print_start_cart();
+    //print_start_DOF();    
+    //print_start_cart();
 
         std::vector<float> mode_cost;
-        planner_status = best_mode( mode_cost, rparams, ptraj);
+        planner_status = best_mode( mode_cost, rparams, ptraj, plan);
     }
     return planner_status;
 }
 
 
-OpenRAVE::PlannerStatus SBPLBasePlanner::best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj ) {
+OpenRAVE::PlannerStatus SBPLBasePlanner::best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan ) {
 try{
     int start_id;
     int solved;
     for (int compteur_mode=1;compteur_mode<4;compteur_mode++) {
       //  std::cout << "compteur : "<<compteur_mode<<std::endl;
-        std::vector<int> plan;
+        plan.clear();
         // mutex later ?
         start_id = _env->SetStart(_start_pos[0], _start_pos[1], _start_pos[2],_start_pos[3], _start_pos[4], _start_pos[5], compteur_mode);
 
@@ -180,10 +179,13 @@ try{
             return OpenRAVE::PS_Failed;
         }
         solved = _planner->replan(&plan, rparams);
+        RAVELOG_INFO("[SBPLBasePlanner] Solved? %d\n", solved);
+
+        //std::cout<<"compteur : "<<compteur_mode <<" ;  plan size : "<<plan.size()<<std::endl; 
    //  std::cout << "solved ? "<< solved2 << std::endl;
         if ( solved==0) {
             RAVELOG_ERROR("[SBPLBasePlanner] SBPL unable to find solution in allocated time\n");
-            std::cout << "Compteur_mode : "<<compteur_mode<<std::endl;
+        //    std::cout << "Compteur_mode : "<<compteur_mode<<std::endl;
             return OpenRAVE::PS_Failed;
         }
 
@@ -197,9 +199,9 @@ try{
 
         _env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path, _path_cost, _cart_path, _list_actions);         
         mode_cost.push_back(_path_cost);
-        std::cout <<"mode cost : "<< mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
         }
     }
+    std::cout <<"mode cost : "<< mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
     return OpenRAVE::PS_HasSolution;
 }catch( SBPL_Exception e ){
     RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while searching the best mode\n");

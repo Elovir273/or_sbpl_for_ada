@@ -80,7 +80,7 @@ namespace or_sbpl_for_ada {
 
 	void print_start_DOF();
 	void print_start_cart();
-	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj);
+	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan);
 	OpenRAVE::PlannerStatus init_plan();
 	void start_listener();
 	void chatterCallback(const std_msgs::String::ConstPtr& msg);
