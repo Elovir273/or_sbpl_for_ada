@@ -135,6 +135,14 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
    // std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
 
+    boost::thread t_listener;
+    t_listener = boost::thread(&SBPLBasePlanner::start_listener, this);
+
+    while ( _start_pos.size() != 6 ) {
+        sleep(1);
+        std::cout <<" vec : "<< _start_pos.size() << std::endl;
+    }
+
     OpenRAVE::PlannerStatus planner_status;
     planner_status = init_plan();
 
@@ -144,36 +152,29 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     rparams.return_first_solution = _return_first;
     rparams.max_time = _maxtime;
 
-    // start_listener();
-
 //while(true) {
-for ( int temp=0; temp < 20; temp++) {
-    std::vector<OpenRAVE::dReal> start_vals(6);
-
-    OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
-
-    OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_vals.begin(),
-        manip->GetEndEffectorTransform(), OpenRAVE::DOF_Transform);
+    for ( int temp=0; temp < 20; temp++) {
 
     //print_start_DOF();
-    print_start_cart(start_vals);
+        print_start_cart();
 
-    std::vector<float> mode_cost;
-    planner_status = best_mode(start_vals, mode_cost, rparams);
+        std::vector<float> mode_cost;
+        planner_status = best_mode( mode_cost, rparams, ptraj);
     }
     return planner_status;
 }
 
 
-OpenRAVE::PlannerStatus SBPLBasePlanner::best_mode( std::vector<OpenRAVE::dReal> start_vals, std::vector<float> &mode_cost, ReplanParams rparams ) {
+OpenRAVE::PlannerStatus SBPLBasePlanner::best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj ) {
 try{
     int start_id;
     int solved;
     for (int compteur_mode=1;compteur_mode<4;compteur_mode++) {
       //  std::cout << "compteur : "<<compteur_mode<<std::endl;
         std::vector<int> plan;
-        start_id = _env->SetStart(start_vals[0], start_vals[1], start_vals[2],start_vals[3], start_vals[4], start_vals[5], compteur_mode);
-        
+        // mutex later ?
+        start_id = _env->SetStart(_start_pos[0], _start_pos[1], _start_pos[2],_start_pos[3], _start_pos[4], _start_pos[5], compteur_mode);
+
         if( start_id < 0 || _planner->set_start(start_id) == 0){
             RAVELOG_ERROR("[SBPLBasePlanner] [best_mode] Failed to set start state\n");
             return OpenRAVE::PS_Failed;
@@ -185,14 +186,25 @@ try{
             std::cout << "Compteur_mode : "<<compteur_mode<<std::endl;
             return OpenRAVE::PS_Failed;
         }
-        mode_cost.push_back(plan.size());
-     //   std::cout <<"cost : "<<plan.size()<<std::endl;
+
+        if( solved==1 ){
+
+        OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_Transform,
+               _robot, "linear");
+        config_spec.AddDerivativeGroups(1, true);  //velocity group, add delta time group
+        ptraj->Init(config_spec);
+        std::vector<PlannedWaypointPtr> xyzA_path;
+
+        _env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path, _path_cost, _cart_path, _list_actions);         
+        mode_cost.push_back(_path_cost);
+        std::cout <<"mode cost : "<< mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
+        }
     }
     return OpenRAVE::PS_HasSolution;
-    } catch( SBPL_Exception e ){
-        RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while searching the best mode\n");
-        return OpenRAVE::PS_Failed;
-    }
+}catch( SBPL_Exception e ){
+    RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while searching the best mode\n");
+    return OpenRAVE::PS_Failed;
+}
 }
 
 /* Setup the goal point for the plan */
@@ -306,8 +318,8 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::init_plan( ) {
 
     OpenRAVE::RaveTransformMatrix<double> R;
     R.rotfrommat(res[0][0], res[0][1], res[0][2],
-     res[1][0], res[1][1] ,res[1][2] ,
-     res[2][0],res[2][1] ,res[2][2] );
+       res[1][0], res[1][1] ,res[1][2] ,
+       res[2][0],res[2][1] ,res[2][2] );
 
     OpenRAVE::RaveVector<double> trans(x, y, z); 
     OpenRAVE::RaveTransform<double> transform(OpenRAVE::geometry::quatFromMatrix(R), trans);
@@ -382,7 +394,7 @@ bool SBPLBasePlanner::GetListActions(std::ostream &out, std::istream &in){
       return true;
   }
 
-void SBPLBasePlanner::print_start_DOF() {
+  void SBPLBasePlanner::print_start_DOF() {
     std::vector<OpenRAVE::dReal> v;
     _robot->GetDOFValues(v);
 
@@ -392,18 +404,23 @@ void SBPLBasePlanner::print_start_DOF() {
     }
 }
 
-void SBPLBasePlanner::print_start_cart(std::vector<OpenRAVE::dReal> start_vals) {
+void SBPLBasePlanner::print_start_cart() {
     std::cout <<std::endl;
     std::cout << "start cart values : " ;
-    for (int temp2=0;temp2<start_vals.size();temp2++) {
-        std::cout << start_vals[temp2] << " ";
+    for (int temp2=0;temp2<_start_pos.size();temp2++) {
+        std::cout << _start_pos[temp2] << " ";
     }
     std::cout <<std::endl;
 }
 
 void SBPLBasePlanner::chatterCallback(const std_msgs::String::ConstPtr& msg)
 {
-  ROS_INFO("I heard: [%s]", msg->data.c_str());
+
+    // ROS_INFO("I heard: [%s]", msg->data.c_str());
+    _start_pos.clear();
+    std::istringstream iss(msg->data.c_str());
+    std::copy(std::istream_iterator<float>(iss), std::istream_iterator<float>(), std::back_inserter(_start_pos));
+    std::cout <<"listened. size : "<< _start_pos.size() << std::endl;
 }
 
 void SBPLBasePlanner::start_listener()
@@ -413,3 +430,4 @@ void SBPLBasePlanner::start_listener()
   ros::Subscriber sub = n.subscribe("start_pos", 10, &SBPLBasePlanner::chatterCallback, this);
   ros::spin();
 }
+

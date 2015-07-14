@@ -5,6 +5,7 @@
 #include "std_msgs/String.h"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
 
 #include <sbpl/config.h>
 #include <sbpl/planners/planner.h>
@@ -13,6 +14,15 @@
 
 #include <openrave/openrave.h>
 #include <openrave/planner.h>
+
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <iterator>
+#include <iostream>
+#include <cassert>
+#include <sstream>
+
 
 namespace or_sbpl_for_ada {
 
@@ -69,8 +79,8 @@ namespace or_sbpl_for_ada {
     private:
 
 	void print_start_DOF();
-	void print_start_cart(std::vector<OpenRAVE::dReal> start_vals);
-	OpenRAVE::PlannerStatus best_mode( std::vector<OpenRAVE::dReal> start_vals, std::vector<float> &mode_cost, ReplanParams rparams );
+	void print_start_cart();
+	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj);
 	OpenRAVE::PlannerStatus init_plan();
 	void start_listener();
 	void chatterCallback(const std_msgs::String::ConstPtr& msg);
@@ -98,6 +108,8 @@ namespace or_sbpl_for_ada {
 	int _n_axes;
 	bool _return_first;
 	bool _initialized;
+
+	std::vector<float> _start_pos;
     
     };
     
