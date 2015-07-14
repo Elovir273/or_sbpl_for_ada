@@ -30,33 +30,38 @@ include_directories(
   include
   ${OpenRAVE_INCLUDE_DIRS}
   ${SBPL_INCLUDE_DIRS}
-  ${Yaml_INCLUDE_DIRS})
+  ${Yaml_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
+  )
 
 link_directories(
   ${OpenRAVE_LIBRARY_DIRS} 
   ${SBPL_LIBRARY_DIRS} 
-  ${Yaml_LIBRARY_DIRS})
+  ${Yaml_LIBRARY_DIRS}
+  ${catkin_LIBRARIES_DIRS}
+  )
  
 add_library(${PROJECT_NAME} 
   src/SBPLBasePlanner7d.cpp 
   src/SBPLBasePlannerEnvironment7d.cpp 
   src/SBPLBasePlannerTypes7d.cpp
- # src/CachedAction.cpp
- # src/TwistAction.cpp
- # src/start_pos_listener.cpp
   src/Action7d.cpp)
 
 target_link_libraries(${PROJECT_NAME}
     ${SBPL_LIBRARIES} 
     ${OpenRAVE_LIBRARIES} 
-    ${Yaml_LIBRARIES})
+    ${Yaml_LIBRARIES}
+    ${catkin_LIBRARIES}
+    )
 
 openrave_plugin(${PROJECT_NAME}_plugin src/SBPLMain.cpp)
 target_link_libraries(${PROJECT_NAME}_plugin
     ${PROJECT_NAME} 
     yaml-cpp 
     ${SBPL_LIBRARIES} 
-    ${OpenRAVE_LIBRARIES})
+    ${OpenRAVE_LIBRARIES}
+    ${catkin_LIBRARIES}
+    )
 
 add_executable(yamltest2
   test/YamlTest2.cpp
@@ -65,7 +70,7 @@ add_executable(yamltest2
 )
 
 target_link_libraries(yamltest2
-   yaml-cpp ${OpenRAVE_LIBRARIES} boost_system)
+   yaml-cpp ${OpenRAVE_LIBRARIES} ${catkin_LIBRARIES} boost_system)
 
 install(TARGETS or_sbpl_for_ada
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION})

@@ -9,7 +9,6 @@
 #include <sbpl/config.h>
 #include <sbpl/planners/planner.h>
 
-//#include <or_sbpl_for_ada/start_pos_listener.h>
 #include <or_sbpl_for_ada/SBPLBasePlannerEnvironment7d.h>
 
 #include <openrave/openrave.h>
