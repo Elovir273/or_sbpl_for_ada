@@ -151,14 +151,22 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     rparams.return_first_solution = _return_first;
     rparams.max_time = _maxtime;
     std::vector<int> plan;
-//while(true) {
-    for ( int temp=0; temp <10; temp++) {
 
-    //print_start_DOF();    
-    //print_start_cart();
+    ros::Publisher path_cost_pub = init_path_cost_publisher();
+
+//while(true) {
+    for ( int temp=0; temp <100; temp++) {
+
+        //print_start_DOF();    
+        //print_start_cart();
 
         std::vector<float> mode_cost;
         planner_status = best_mode( mode_cost, rparams, ptraj, plan);
+
+        std_msgs::String msg_pub = floatToStringToPub(mode_cost);
+        path_cost_pub.publish(msg_pub);
+        ros::spinOnce();
+
     }
     return planner_status;
 }
@@ -433,3 +441,24 @@ void SBPLBasePlanner::start_listener()
   ros::spin();
 }
 
+ros::Publisher SBPLBasePlanner::init_path_cost_publisher()
+{
+  ros::NodeHandle n;
+  ros::Publisher path_cost_pub = n.advertise<std_msgs::String>("path_cost", 10);
+ 
+  return path_cost_pub;
+}
+
+std_msgs::String SBPLBasePlanner::floatToStringToPub( std::vector<float> mode_cost ) {
+
+    std::string cost_string;
+    for ( int i=0;i<mode_cost.size();i++) {
+        cost_string = cost_string + boost::to_string(mode_cost[i]) + " ";
+    }
+
+    std_msgs::String msg;
+    std::stringstream ss;
+    ss << cost_string;
+    msg.data = ss.str();
+    return msg;
+}
