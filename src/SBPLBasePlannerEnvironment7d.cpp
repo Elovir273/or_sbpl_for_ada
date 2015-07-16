@@ -164,7 +164,13 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
     double path_cost_temp = 0;
     // clear out the vector just in case
     path.clear();
-
+    /*
+    std::cout <<"size of path : "<<state_ids.size()<<std::endl;
+    for (int k=0;k<state_ids.size();k++) {
+        std::cout << state_ids[k] <<" ";
+    }
+    std::cout << std::endl;
+    */
     // iterate through the path
     for(unsigned int pidx = 0; pidx < state_ids.size()-1; pidx++){
         
@@ -193,6 +199,9 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         }
 
         path_cost_temp+=best_cost;
+
+      //  std::cout << "heuristic :  "<< GetFromToHeuristic(state_ids[pidx] ,0);
+
         // If we didn't find a successor something has gone terribly wrong, bail
         if(best_idx == -1){
             RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Failed to reconstruct path.");
@@ -206,9 +215,11 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         GridCoordinate gc = StateId2CoordTable[start_id];
     
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
-    //    std::cout<<"    Traj (world) : "
-    //  <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode<<std::endl;
+     //   std::cout<<"    Traj (world) : "
+     // <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
      
+// std::cout <<"    cost : "<< best_cost<<std::endl;
+
         // Add initial state
           if ( pidx == 0 )  {
             cart_path.push_back(wc_current);
@@ -593,10 +604,15 @@ double SBPLBasePlannerEnvironment::ComputeCost(const GridCoordinate &c1, const G
     if ( c1.mode != c2.mode ) {
         mode_cost=1;
     }
-
+/*
     double cost = _lweight*xdiff*xdiff + _lweight*ydiff*ydiff + _lweight*zdiff*zdiff + 
                     _tweight*thetadiff*thetadiff + _tweight*psidiff*psidiff + _tweight*phidiff*phidiff +
                     _mweight*mode_cost ;
+*/
+    double cost = _lweight*sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff) + 
+                    _tweight*( thetadiff + psidiff + phidiff) +
+                    _mweight*mode_cost ;
+
     return cost;
 }
 

@@ -6,7 +6,7 @@
 #include <sbpl/utils/mdp.h>
 #include <sbpl/utils/mdpconfig.h>
 #include <sbpl/utils/utils.h>
-
+#include <cmath>
 #include <openrave/openrave.h>
 
 namespace or_sbpl_for_ada {

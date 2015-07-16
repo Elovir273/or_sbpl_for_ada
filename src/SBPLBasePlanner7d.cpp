@@ -139,7 +139,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     t_listener = boost::thread(&SBPLBasePlanner::start_listener, this);
 
     while ( _start_pos.size() != 6 ) {
-        sleep(1);
+        sleep(0.1);
     }
 
     OpenRAVE::PlannerStatus planner_status;
@@ -154,15 +154,18 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
 
     ros::Publisher path_cost_pub = init_path_cost_publisher();
 
-//while(true) {
-    for ( int temp=0; temp <100; temp++) {
-
+    while(true) {
+    //for ( int temp=0; temp <80; temp++) {
+    //for ( int temp=0; temp <1; temp++) {
         //print_start_DOF();    
         //print_start_cart();
 
         std::vector<float> mode_cost;
         planner_status = best_mode( mode_cost, rparams, ptraj, plan);
-
+        /*
+        std::cout <<"Planned for the start pos. mode cost : "
+            << mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
+            */
         std_msgs::String msg_pub = floatToStringToPub(mode_cost);
         path_cost_pub.publish(msg_pub);
         ros::spinOnce();
@@ -177,6 +180,7 @@ try{
     int start_id;
     int solved;
     for (int compteur_mode=1;compteur_mode<4;compteur_mode++) {
+       // print_start_cart();
       //  std::cout << "compteur : "<<compteur_mode<<std::endl;
         plan.clear();
         // mutex later ?
@@ -209,7 +213,7 @@ try{
         mode_cost.push_back(_path_cost);
         }
     }
-    std::cout <<"mode cost : "<< mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
+    
     return OpenRAVE::PS_HasSolution;
 }catch( SBPL_Exception e ){
     RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while searching the best mode\n");
@@ -430,7 +434,7 @@ void SBPLBasePlanner::chatterCallback(const std_msgs::String::ConstPtr& msg)
     _start_pos.clear();
     std::istringstream iss(msg->data.c_str());
     std::copy(std::istream_iterator<float>(iss), std::istream_iterator<float>(), std::back_inserter(_start_pos));
-    std::cout <<"listened. size : "<< _start_pos.size() << std::endl;
+    std::cout <<"listened to start pos. size : "<< _start_pos.size() << std::endl;
 }
 
 void SBPLBasePlanner::start_listener()
