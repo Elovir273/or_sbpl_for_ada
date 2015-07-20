@@ -85,7 +85,13 @@ bool SBPLBasePlannerEnvironment::InitializeMDPCfg(MDPConfig* MDPCfg) {
 int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi, const int &start_mode) {
 
     WorldCoordinate wc(x, y, z, phi, theta, psi, start_mode);
-   // std::cout << "start : "<< wc << std::endl;
+
+    // TO DEBUG   If not these lines, openrave error, wrong norm. 
+    std::stringstream test_stream;
+    test_stream << wc;
+
+    // std::cout << "start : "<< wc << std::endl;
+
     GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set start to grid coordinate: %s\n", gc.toString().c_str());
@@ -114,7 +120,7 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
 
 std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> goal_vals) {
 
-    std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
+   // std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
 
     if (goal_vals.size()%7 != 0 ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Goals values are not specified correctly ( not a mutliple of 7 ) \n");
@@ -164,13 +170,13 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
     double path_cost_temp = 0;
     // clear out the vector just in case
     path.clear();
-    /*
+    
     std::cout <<"size of path : "<<state_ids.size()<<std::endl;
     for (int k=0;k<state_ids.size();k++) {
         std::cout << state_ids[k] <<" ";
     }
     std::cout << std::endl;
-    */
+    
     // iterate through the path
     for(unsigned int pidx = 0; pidx < state_ids.size()-1; pidx++){
         
@@ -200,7 +206,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
 
         path_cost_temp+=best_cost;
 
-      //  std::cout << "heuristic :  "<< GetFromToHeuristic(state_ids[pidx] ,0);
+        std::cout << "heuristic :  "<< GetFromToHeuristic(state_ids[pidx] ,0);
 
         // If we didn't find a successor something has gone terribly wrong, bail
         if(best_idx == -1){
@@ -215,8 +221,8 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         GridCoordinate gc = StateId2CoordTable[start_id];
     
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
-     //   std::cout<<"    Traj (world) : "
-     // <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
+        std::cout<<"    Traj (world) : "
+      <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
      
 // std::cout <<"    cost : "<< best_cost<<std::endl;
 

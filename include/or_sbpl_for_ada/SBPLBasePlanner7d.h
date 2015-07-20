@@ -79,8 +79,9 @@ namespace or_sbpl_for_ada {
     private:
 
 	void print_start_DOF();
-	void print_start_cart();
-	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan);
+	void print_start_cart(std::vector<OpenRAVE::dReal> start_pos);
+	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, 
+		OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan, std::vector<OpenRAVE::dReal> start_pos);
 	OpenRAVE::PlannerStatus init_plan();
 
 	void start_listener();
@@ -91,6 +92,7 @@ namespace or_sbpl_for_ada {
 	void AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec,
 			 const double &x, const double &y, const double &z, const double &theta, const double &phi,const double &psi,const int &mode) const;
 	bool GetPathCost(std::ostream &out, std::istream &in);
+	bool GetPathsCosts(std::ostream &out, std::istream &in);
 	bool GetCartPath(std::ostream &out, std::istream &in);
 	bool GetListActions(std::ostream &out, std::istream &in);
 
@@ -103,6 +105,7 @@ namespace or_sbpl_for_ada {
         std::vector<WorldCoordinate> _cart_path;
         std::vector<WorldCoordinate> _list_actions;
 
+	float _cost[3];
     double _path_cost;    
 	double _maxtime;
 	double _epsinit;
@@ -110,8 +113,6 @@ namespace or_sbpl_for_ada {
 	int _n_axes;
 	bool _return_first;
 	bool _initialized;
-
-	std::vector<float> _start_pos;
     
     };
     
