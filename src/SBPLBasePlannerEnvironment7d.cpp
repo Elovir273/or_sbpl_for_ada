@@ -171,19 +171,21 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
     // clear out the vector just in case
     path.clear();
     
+    /*
     std::cout <<"size of path : "<<state_ids.size()<<std::endl;
     for (int k=0;k<state_ids.size();k++) {
         std::cout << state_ids[k] <<" ";
     }
     std::cout << std::endl;
-    
+    */
+
     // iterate through the path
     for(unsigned int pidx = 0; pidx < state_ids.size()-1; pidx++){
         
         // Grab the states that start and end this action
         int start_id = state_ids[pidx];
         int goal_id = state_ids[pidx+1];
-      //  std::cout <<"start id & goal id : "<< start_id << " "<<goal_id<<std::endl;
+     //   std::cout <<"start id & goal id : "<< start_id << " "<<goal_id;
 
         // Now search through all successors to find the best (least cost) one
         //   that leads to the goal
@@ -206,7 +208,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
 
         path_cost_temp+=best_cost;
 
-        std::cout << "heuristic :  "<< GetFromToHeuristic(state_ids[pidx] ,0);
+     //   std::cout << "    heuristic : "<< GetFromToHeuristic(state_ids[pidx] ,0);
 
         // If we didn't find a successor something has gone terribly wrong, bail
         if(best_idx == -1){
@@ -221,10 +223,11 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         GridCoordinate gc = StateId2CoordTable[start_id];
     
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
-        std::cout<<"    Traj (world) : "
-      <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
+
+   //     std::cout<<"    Traj (world) : "
+   //   <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
      
-// std::cout <<"    cost : "<< best_cost<<std::endl;
+    //  std::cout <<"  cost : "<< best_cost<<std::endl;
 
         // Add initial state
           if ( pidx == 0 )  {

@@ -16,7 +16,7 @@
 using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
-OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(0.3), _path_cost(-1.0),
+OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(1), _path_cost(-1.0),
 _epsinit(5), _epsdec(1.0), _return_first(false) {
 
     _cost[0]=0;
