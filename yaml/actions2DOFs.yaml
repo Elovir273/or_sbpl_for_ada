@@ -1,7 +1,7 @@
 cellsize: 0.04
 numangles: 8
 nummodes: 3
-timelimit: 100.0
+timelimit: 3
 linear_weight: 1
 angle_weight: 1
 mode_weight: 5

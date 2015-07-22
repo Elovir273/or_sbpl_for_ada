@@ -17,7 +17,7 @@ using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
 OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(3), _path_cost(-1.0),
-_epsinit(5), _epsdec(1.0), _return_first(false) {
+_epsinit(3), _epsdec(1.0), _return_first(false) {
 
     _cost[0]=0;
     _cost[1]=0;
@@ -71,10 +71,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     numangles = doc["numangles"].as<int>();
     nummodes = doc["nummodes"].as<int>();
     doc["actions"] >> actions;
-    std::cout <<"maxtime1 : "<< _maxtime << std::endl;
     _maxtime = doc["timelimit"].as<double>();
-    std::cout <<"maxtime2 : "<< _maxtime << std::endl;
-
     n_axes = doc["n_axes"].as<int>();
     _n_axes = n_axes;
 
@@ -127,7 +124,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
 
     _env->Initialize(cellsize, extents, numangles, actions, linear_weight, angle_weight, mode_weight, nummodes); //env qu'on def comme on veut, ici 7d
     _planner = boost::make_shared<ADPlanner>(_env.get(), true);
-
+    _maxtime_temp = _maxtime;
     return true;
 }
 
@@ -143,18 +140,11 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     RAVELOG_INFO("[SBPLBasePlanner] Begin PlanPath\n");
    // std::cout << "_robot->GetTransform() : " << _robot->GetTransform() << std::endl;
 
-/*
-    boost::thread t_listener;
-    t_listener = boost::thread(&SBPLBasePlanner::start_listener, this);
-
-    while ( start_pos.size() != 6 ) {
-        sleep(0.1);
-    }
-*/
-
     _planner->force_planning_from_scratch_and_free_memory();
 
     OpenRAVE::PlannerStatus planner_status;
+
+    _maxtime = _maxtime_temp; // bug : _maxtime from InitPlan not remembered. Temporary fix
     planner_status = init_plan();
 
     ReplanParams rparams(_maxtime);
@@ -162,84 +152,89 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
     rparams.dec_eps = _epsdec;
     rparams.return_first_solution = _return_first;
     rparams.max_time = _maxtime;
+    
     std::vector<int> plan;
 
-    //for ( int temp=0; temp <80; temp++) {
-    //for ( int temp=0; temp <10; temp++) {
+    std::vector<OpenRAVE::dReal> start_pos(6);
+/*
+So it's the transform that you are sending that is wrong. Try replacing
+manip->GetEndEffectorTransform()
+with
+_robot->GetLink("mico_end_effector")->GetTransform()'
+*/
+    OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
+    OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), _robot->GetLink("mico_end_effector")->GetTransform(), OpenRAVE::DOF_Transform);
+    //OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), manip->GetEndEffectorTransform(), OpenRAVE::DOF_Transform);
 
-        std::vector<OpenRAVE::dReal> start_pos(6);
-        OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
-        OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), manip->GetEndEffectorTransform(), OpenRAVE::DOF_Transform);
+    //print_start_DOF();    
+    //print_start_cart(start_pos);
 
-        //print_start_DOF();    
-        //print_start_cart(start_pos);
+    std::vector<float> mode_cost;
+    
+    planner_status = best_mode( mode_cost, rparams, ptraj, plan, start_pos);
 
-        std::vector<float> mode_cost;
-        
-        planner_status = best_mode( mode_cost, rparams, ptraj, plan, start_pos);
- 
-      //  std::cout <<"Planned for the start pos. mode cost : "
-      //      << mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
+  //  std::cout <<"Planned for the start pos. mode cost : "
+  //      << mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
 
-        _cost[0]=mode_cost[0];
-        _cost[1]=mode_cost[1];
-        _cost[2]=mode_cost[2];
+    _cost[0]=mode_cost[0];
+    _cost[1]=mode_cost[1];
+    _cost[2]=mode_cost[2];
 
-        return planner_status;
+    return planner_status;
 }
 
 
 OpenRAVE::PlannerStatus SBPLBasePlanner::best_mode( std::vector<float> &mode_cost, ReplanParams rparams, 
     OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan2, std::vector<OpenRAVE::dReal> start_pos ) {
 
-try{
-    int start_id;
-    int solved;
-    for (int compteur_mode=1;compteur_mode<4;compteur_mode++) {
+    try{
+        int start_id;
+        int solved;
+        for (int compteur_mode=1;compteur_mode<4;compteur_mode++) {
        // print_start_cart();
       //  std::cout << "compteur : "<<compteur_mode<<std::endl;
         //plan.clear();
-std::vector<int> plan;
+            std::vector<int> plan;
 
-        start_id = _env->SetStart(start_pos[0], start_pos[1], start_pos[2],start_pos[3], start_pos[4], start_pos[5], compteur_mode);
+            start_id = _env->SetStart(start_pos[0], start_pos[1], start_pos[2],start_pos[3], start_pos[4], start_pos[5], compteur_mode);
 
-        if( start_id < 0 || _planner->set_start(start_id) == 0){
-            RAVELOG_ERROR("[SBPLBasePlanner] [best_mode] Failed to set start state\n");
-            return OpenRAVE::PS_Failed;
-        }
+            if( start_id < 0 || _planner->set_start(start_id) == 0){
+                RAVELOG_ERROR("[SBPLBasePlanner] [best_mode] Failed to set start state\n");
+                return OpenRAVE::PS_Failed;
+            }
 
     //    std::cout << "start planning" << std::endl;
-        solved = _planner->replan(&plan, rparams);
+            solved = _planner->replan(&plan, rparams);
     //    std::cout << "end planning" << std::endl;
 
 
-        RAVELOG_INFO("[SBPLBasePlanner] Solved? %d\n", solved);
+            RAVELOG_INFO("[SBPLBasePlanner] Solved? %d\n", solved);
 
         //std::cout<<"compteur : "<<compteur_mode <<" ;  plan size : "<<plan.size()<<std::endl; 
      // std::cout << "solved ? "<< solved << std::endl;
-        
-        if ( solved==0) {
-            RAVELOG_ERROR("[SBPLBasePlanner] SBPL unable to find solution in allocated time\n");
+
+            if ( solved==0) {
+                RAVELOG_ERROR("[SBPLBasePlanner] SBPL unable to find solution in allocated time\n");
         //    std::cout << "Compteur_mode : "<<compteur_mode<<std::endl;
-            return OpenRAVE::PS_Failed;
-        }
+                return OpenRAVE::PS_Failed;
+            }
 
 
-        if( solved==1 ){
+            if( solved==1 ){
 
-        OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_Transform,
-               _robot, "linear");
+                OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_Transform,
+                 _robot, "linear");
         config_spec.AddDerivativeGroups(1, true);  //velocity group, add delta time group
         ptraj->Init(config_spec);
         std::vector<PlannedWaypointPtr> xyzA_path;
 
         _env->ConvertStateIDPathIntoWaypointPath(plan, xyzA_path, _path_cost, _cart_path, _list_actions);         
         mode_cost.push_back(_path_cost);
-        }
-        
     }
-    
-    return OpenRAVE::PS_HasSolution;
+
+}
+
+return OpenRAVE::PS_HasSolution;
 }catch( SBPL_Exception e ){
     RAVELOG_ERROR("[SBPLBasePlanner] SBPL encountered fatal exception while searching the best mode\n");
     return OpenRAVE::PS_Failed;
@@ -357,8 +352,8 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::init_plan( ) {
 
     OpenRAVE::RaveTransformMatrix<double> R;
     R.rotfrommat(res[0][0], res[0][1], res[0][2],
-       res[1][0], res[1][1] ,res[1][2] ,
-       res[2][0],res[2][1] ,res[2][2] );
+     res[1][0], res[1][1] ,res[1][2] ,
+     res[2][0],res[2][1] ,res[2][2] );
 
     OpenRAVE::RaveVector<double> trans(x, y, z); 
     OpenRAVE::RaveTransform<double> transform(OpenRAVE::geometry::quatFromMatrix(R), trans);
@@ -417,13 +412,13 @@ bool SBPLBasePlanner::GetPathsCosts(std::ostream &out, std::istream &in){
     emitter << YAML::BeginSeq;
 
 
-      emitter << _cost[0] << _cost[1] << _cost[2];
+    emitter << _cost[0] << _cost[1] << _cost[2];
 
-  
-  emitter << YAML::EndSeq;
 
-  out << emitter.c_str();
-  return true;
+    emitter << YAML::EndSeq;
+
+    out << emitter.c_str();
+    return true;
 }
 
 
@@ -495,7 +490,7 @@ ros::Publisher SBPLBasePlanner::init_path_cost_publisher()
 {
   ros::NodeHandle n;
   ros::Publisher path_cost_pub = n.advertise<std_msgs::String>("path_cost", 10);
- 
+
   return path_cost_pub;
 }
 

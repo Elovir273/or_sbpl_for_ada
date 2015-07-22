@@ -108,6 +108,7 @@ namespace or_sbpl_for_ada {
 	float _cost[3];
     double _path_cost;    
 	double _maxtime;
+	double _maxtime_temp;
 	double _epsinit;
 	double _epsdec;
 	int _n_axes;
