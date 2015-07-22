@@ -16,7 +16,7 @@
 using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
-OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(1), _path_cost(-1.0),
+OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(3), _path_cost(-1.0),
 _epsinit(5), _epsdec(1.0), _return_first(false) {
 
     _cost[0]=0;
@@ -71,11 +71,13 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     numangles = doc["numangles"].as<int>();
     nummodes = doc["nummodes"].as<int>();
     doc["actions"] >> actions;
+    std::cout <<"maxtime1 : "<< _maxtime << std::endl;
     _maxtime = doc["timelimit"].as<double>();
+    std::cout <<"maxtime2 : "<< _maxtime << std::endl;
+
     n_axes = doc["n_axes"].as<int>();
-    // n_axes=2;
     _n_axes = n_axes;
-   // std::cout <<"Warning : BasePlanner, n_axes en dur"<<std::endl;
+
 #else
 
     // Parse the extra parameters as yaml
@@ -149,6 +151,9 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         sleep(0.1);
     }
 */
+
+    _planner->force_planning_from_scratch_and_free_memory();
+
     OpenRAVE::PlannerStatus planner_status;
     planner_status = init_plan();
 

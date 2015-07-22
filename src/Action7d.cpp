@@ -42,7 +42,7 @@ std::vector<WorldCoordinate> Action7d::applyWithIntermediates(const WorldCoordin
     WorldCoordinate next_pos=_pts[0];
     WorldCoordinate wc_current(wc);
 
-        double coef_pos=0.01;
+        double coef_pos=0.04;
         double coef_angle=0.4; 
         //( Pi/16 ~= 0.1963 : a bit more to be sure it moves, if num_angle == 16
         // if numangle == 8, use coef_angle == 8 )

@@ -10,7 +10,7 @@ using namespace or_sbpl_for_ada;
 namespace bmc = boost::math::constants;
 
 SBPLBasePlannerEnvironment::SBPLBasePlannerEnvironment(OpenRAVE::RobotBasePtr robot) 
-    : _robot(robot), _timestep(0.05) {
+: _robot(robot), _timestep(0.05) {
 
     _lweight = 10;
     _tweight = 10;   
@@ -26,9 +26,9 @@ SBPLBasePlannerEnvironment::~SBPLBasePlannerEnvironment() {
 }
 
 bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
-                                            const EnvironmentExtents &extents,
-                                            const int &numangles,
-                                            const ActionList &actions,
+    const EnvironmentExtents &extents,
+    const int &numangles,
+    const ActionList &actions,
 					    const double &lweight, // linear weight, x,y,z
 					    const double &tweight, // angle weight, phi, theta, psi
                         const double &mweight, // mode switching weight
@@ -48,7 +48,7 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
     // Angles 
     _numangles = numangles;
     _anglesize = 2.0*bmc::pi<double>()/_numangles;
-   
+
     // Weighting
     _lweight = lweight;
     _tweight = tweight;
@@ -57,11 +57,11 @@ bool SBPLBasePlannerEnvironment::Initialize(const double &cellsize,
     // Actions
     _actions = actions;
 
-     unsigned long int space_size=_gridwidth*_gridheight*_griddepth*_nummodes*_numangles*_numangles*_numangles;
-     unsigned long int max_int = 2147483647;
-     if ( space_size > max_int ) {
+    unsigned long int space_size=_gridwidth*_gridheight*_griddepth*_nummodes*_numangles*_numangles*_numangles;
+    unsigned long int max_int = 2147483647;
+    if ( space_size > max_int ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Error : Space size > size int. \n");
-     }
+    }
      // std::cout << "space size : "<< space_size << std::endl;
 
     return true;
@@ -90,13 +90,10 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
     std::stringstream test_stream;
     test_stream << wc;
 
-    // std::cout << "start : "<< wc << std::endl;
-
     GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set start to grid coordinate: %s\n", gc.toString().c_str());
     int idx = GridCoordinateToStateIndex(gc);
-   // std::cout << "setstart, idx : "<<idx<<std::endl;
 
     if( idx == INVALID_INDEX ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] The start state %s is invalid.\n", gc.toString().c_str() );
@@ -120,7 +117,7 @@ int SBPLBasePlannerEnvironment::SetStart(const double &x, const double &y, const
 
 std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> goal_vals) {
 
-   // std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
+  //  std::cout << "goal  : ["<< goal_vals[0]<<" "<< goal_vals[1]<<" "<< goal_vals[2]<<" "<< goal_vals[3]<<" "<< goal_vals[4]<<" "<< goal_vals[5]<<" "<< goal_vals[6]<<"]"<< std::endl;
 
     if (goal_vals.size()%7 != 0 ) {
         RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Goals values are not specified correctly ( not a mutliple of 7 ) \n");
@@ -131,39 +128,40 @@ std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> g
     for (int i=0;i<goal_vals.size()/7;i++) {
         double x=goal_vals[7*i],y=goal_vals[7*i+1],z=goal_vals[7*i+2],phi=goal_vals[7*i+3],theta=goal_vals[7*i+4],psi=goal_vals[7*i+5],mode=goal_vals[7*i+6];
 
-    WorldCoordinate wc(x, y, z, phi, theta, psi, mode);
-    GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
+        WorldCoordinate wc(x, y, z, phi, theta, psi, mode);
+        GridCoordinate gc = WorldCoordinateToGridCoordinate(wc);
 
-    int idx = GridCoordinateToStateIndex(gc);
-    RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set goal to grid coordinate %d: %s (%s)\n", idx, wc.toString().c_str(), gc.toString().c_str());    
-    if( idx == INVALID_INDEX ) {
-        RAVELOG_ERROR("[SBPLBasePlannerEnvironment] The goal state %s is invalid.\n", gc.toString().c_str() );
-        throw new SBPL_Exception();
-    }
+        int idx = GridCoordinateToStateIndex(gc);
+        RAVELOG_INFO("[SBPLBasePlannerEnvironment] Trying to set goal to grid coordinate %d: %s (%s)\n", idx, wc.toString().c_str(), gc.toString().c_str());    
+        if( idx == INVALID_INDEX ) {
+            RAVELOG_ERROR("[SBPLBasePlannerEnvironment] The goal state %s is invalid.\n", gc.toString().c_str() );
+            throw new SBPL_Exception();
+        }
 
-    std::map<int, int>::iterator it = StateIndex2StateIdTable.find(idx);
-    int state_id;
-    if(it == StateIndex2StateIdTable.end()){
-        state_id = CreateState(gc);
-    }else{
-        state_id = it->second;
-    }
+        std::map<int, int>::iterator it = StateIndex2StateIdTable.find(idx);
+        int state_id;
+        if(it == StateIndex2StateIdTable.end()){
+            state_id = CreateState(gc);
+        }else{
+            state_id = it->second;
+        }
 
     _goal.push_back(state_id); //_goal = state_id;
     goals_id.push_back(state_id);
     
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Set goal %d to id: %d\n", i,_goal[i]);
-    }
-    return goals_id;
+}
+return goals_id;
 }
 
 // Return the cost of the best path of this mode
 void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::vector<int> &state_ids,
-                                                                    std::vector<PlannedWaypointPtr> &path, double &path_cost,
-                                                                    std::vector<WorldCoordinate> &cart_path,
-                                                                    std::vector<WorldCoordinate> &action_list ) {
-      
+    std::vector<PlannedWaypointPtr> &path, double &path_cost,
+    std::vector<WorldCoordinate> &cart_path,
+    std::vector<WorldCoordinate> &action_list ) {
+
+    bool print_info = true;
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Begin ConvertStateIDPathIntoXYThetaPath\n");
 
@@ -171,17 +169,17 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
     // clear out the vector just in case
     path.clear();
     
-    /*
-    std::cout <<"size of path : "<<state_ids.size()<<std::endl;
-    for (int k=0;k<state_ids.size();k++) {
-        std::cout << state_ids[k] <<" ";
+    if (print_info) {
+        std::cout <<"size of path : "<<state_ids.size()<<std::endl;
+        for (int k=0;k<state_ids.size();k++) {
+            std::cout << state_ids[k] <<" ";
+        }
+        std::cout << std::endl;
     }
-    std::cout << std::endl;
-    */
 
     // iterate through the path
     for(unsigned int pidx = 0; pidx < state_ids.size()-1; pidx++){
-        
+
         // Grab the states that start and end this action
         int start_id = state_ids[pidx];
         int goal_id = state_ids[pidx+1];
@@ -207,9 +205,9 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
         }
 
         path_cost_temp+=best_cost;
-
-     //   std::cout << "    heuristic : "<< GetFromToHeuristic(state_ids[pidx] ,0);
-
+        if (print_info) {
+            std::cout << "    heuristic : "<< GetFromToHeuristic(state_ids[pidx] ,0);
+        }
         // If we didn't find a successor something has gone terribly wrong, bail
         if(best_idx == -1){
             RAVELOG_ERROR("[SBPLBasePlannerEnvironment] Failed to reconstruct path.");
@@ -221,26 +219,33 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
 
 
         GridCoordinate gc = StateId2CoordTable[start_id];
-    
+
         WorldCoordinate wc_current = GridCoordinateToWorldCoordinate(gc);
+        if (print_info) {
+            std::cout<<"    Traj (world) : "
+            <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
 
-   //     std::cout<<"    Traj (world) : "
-   //   <<wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "<<wc_current.theta<<" "<<wc_current.psi<<" "<<wc_current.mode;
-     
-    //  std::cout <<"  cost : "<< best_cost<<std::endl;
-
+            std::cout <<"  cost : "<< best_cost<<std::endl;
+        }
         // Add initial state
-          if ( pidx == 0 )  {
+        if ( pidx == 0 )  {
             cart_path.push_back(wc_current);
-          }
+        }
 
         std::vector<WorldCoordinate> pts = a->applyWithIntermediates(wc_current, _robot);
 
         // pts[0] : because array with one value
-      WorldCoordinate effect_action( pts[0].x - wc_current.x, pts[0].y - wc_current.y, pts[0].z - wc_current.z, 
-                    pts[0].phi - wc_current.phi, pts[0].theta - wc_current.theta, pts[0].psi - wc_current.psi, pts[0].mode );
+        WorldCoordinate effect_action( pts[0].x - wc_current.x, pts[0].y - wc_current.y, pts[0].z - wc_current.z, 
+            pts[0].phi - wc_current.phi, pts[0].theta - wc_current.theta, pts[0].psi - wc_current.psi, pts[0].mode );
         action_list.push_back(effect_action);
+
         cart_path.push_back(pts[0]);
+        if (print_info==true && pidx == state_ids.size()-2) {
+            std::cout<<"    Traj (world) : "
+            <<pts[0].x<<" "<<pts[0].y<<" "<<pts[0].z<<" "<<pts[0].phi<<" "<<pts[0].theta<<" "<<pts[0].psi<<" "<<pts[0].mode;
+            
+            std::cout <<"  cost : "<< best_cost<<std::endl;
+        }
 
         BOOST_FOREACH(WorldCoordinate wc_next, pts){
             // Add this pose to the pose list
@@ -279,10 +284,10 @@ int SBPLBasePlannerEnvironment::GetGoalHeuristic(int stateID) {
     int min_heuristic = GetFromToHeuristic(stateID, _goal[0]);
     int res = 0;
     if (_goal.size() > 1 ) {
-    for (int i=1;i<_goal.size();i++) {
-        res = GetFromToHeuristic(stateID, _goal[i]);
-        if ( res < min_heuristic ) { min_heuristic = res;}
-    }
+        for (int i=1;i<_goal.size();i++) {
+            res = GetFromToHeuristic(stateID, _goal[i]);
+            if ( res < min_heuristic ) { min_heuristic = res;}
+        }
     }
     return min_heuristic;
 }
@@ -291,7 +296,7 @@ int SBPLBasePlannerEnvironment::GetStartHeuristic(int stateID){
     return GetFromToHeuristic(stateID, _start);
 
 }
- 
+
 void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* SuccIDV, std::vector<int>* CostV){
 
     std::vector<ActionPtr> ignored;
@@ -311,10 +316,10 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
 
     // If this is the goal state, just return
     for (int i=0;i<_goal.size();i++) {
-    if( SourceStateID == _goal[i] ){
-        RAVELOG_INFO("[SBPLBasePlanningEnvironment] Expanded goal. Returning.\n");
-        return;
-    }
+        if( SourceStateID == _goal[i] ){
+            RAVELOG_INFO("[SBPLBasePlanningEnvironment] Expanded goal. Returning.\n");
+            return;
+        }
     }
 
     // Convert to a world coordinate
@@ -323,7 +328,7 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
     int orig_idx = GridCoordinateToStateIndex(gc);
 
     RAVELOG_DEBUG("[SBPLBasePlanningEnvironment] Expanding node %d: %s (%s)\n",
-                  SourceStateID, wc.toString().c_str(), gc.toString().c_str());
+      SourceStateID, wc.toString().c_str(), gc.toString().c_str());
 
     // Lock the environment
     OpenRAVE::EnvironmentBasePtr env = _robot->GetEnv();
@@ -344,42 +349,42 @@ void SBPLBasePlannerEnvironment::GetSuccs(int SourceStateID, std::vector<int>* S
             GridCoordinate gc_final = WorldCoordinateToGridCoordinate(wc_final);
             int state_idx = GridCoordinateToStateIndex(gc_final);
          //   std::cout << "Ltest3 : "<< state_idx << std::endl;
-	    if(state_idx == orig_idx){
+            if(state_idx == orig_idx){
      //   std::cout << wc << std::endl; 
      //   std::cout << wc_final << std::endl<< std::endl;
 		//RAVELOG_WARN("[SBPLBasePlanningEnvironment] Action did not move from original grid cell. Check primitives for validity.\n");
-		continue;
-	    }
+              continue;
+          }
 
-            if(state_idx != INVALID_INDEX){
+          if(state_idx != INVALID_INDEX){
                 // Action propagatin led to a valid state
-                
 
-                std::map<int, int>::iterator it = StateIndex2StateIdTable.find(state_idx);
-                int state_id;
-                if( it == StateIndex2StateIdTable.end() ){
-                    state_id = CreateState(gc_final);
-                }else{
-                    state_id = it->second;
-                }
 
-                RAVELOG_DEBUG("[SBPLBasePlannerEnvironment] Adding successor state %d (idx %d): %s (%s)\n", 
-                              state_id, state_idx, wc_final.toString().c_str(), 
-                              gc_final.toString().c_str());
-
-                SuccIDV->push_back(state_id);
-
-                double cost = ComputeCost(gc, gc_final);
-		int icost = cost * a->getWeight();
-		if(icost <= 0){
-		    RAVELOG_WARN("[SBPLBasePlannerEnvironment] Invalid cost: %d (Cost: %0.3f, Weight: %0.3f)\n", icost, cost, a->getWeight());
-		}
-                CostV->push_back(icost); 
-
-                ActionV->push_back(a);
+            std::map<int, int>::iterator it = StateIndex2StateIdTable.find(state_idx);
+            int state_id;
+            if( it == StateIndex2StateIdTable.end() ){
+                state_id = CreateState(gc_final);
+            }else{
+                state_id = it->second;
             }
-        }
-    }
+
+            RAVELOG_DEBUG("[SBPLBasePlannerEnvironment] Adding successor state %d (idx %d): %s (%s)\n", 
+              state_id, state_idx, wc_final.toString().c_str(), 
+              gc_final.toString().c_str());
+
+            SuccIDV->push_back(state_id);
+
+            double cost = ComputeCost(gc, gc_final);
+            int icost = cost * a->getWeight();
+            if(icost <= 0){
+              RAVELOG_WARN("[SBPLBasePlannerEnvironment] Invalid cost: %d (Cost: %0.3f, Weight: %0.3f)\n", icost, cost, a->getWeight());
+          }
+          CostV->push_back(icost); 
+
+          ActionV->push_back(a);
+      }
+  }
+}
 }
 
 void SBPLBasePlannerEnvironment::GetPreds(int TargetStateID, std::vector<int>* PredIDV, std::vector<int>* CostV){
@@ -392,7 +397,7 @@ void SBPLBasePlannerEnvironment::SetAllActionsandAllOutcomes(CMDPSTATE* state){
     RAVELOG_ERROR("[SBPLBasePlanningEnvironment] SetAllActionsandAllOutcomes is not implemented.\n");
     throw new SBPL_Exception();
 }
- 
+
 void SBPLBasePlannerEnvironment::SetAllPreds(CMDPSTATE* state){
 
     RAVELOG_ERROR("[SBPLBasePlanningEnvironment] SetAllPreds is not implemented.\n");
@@ -419,7 +424,7 @@ void SBPLBasePlannerEnvironment::PrintState(int stateID, bool bVerbose, FILE* fO
     SBPL_FPRINTF(fOut, "Grid: X=%d, Y=%d, Z=%d, Phi=%d, Theta=%d, Psi=%d, Mode=%d", gc.x, gc.y, gc.z, gc.phi, gc.theta, gc.psi, gc.mode);
     if(bVerbose){
         WorldCoordinate wc = GridCoordinateToWorldCoordinate(gc);
-        SBPL_FPRINTF(fOut, " World: X=%0.3f, Y=%0.3f, Z=%0.3f, Phi=%0.3f, Theta=%0.3f, Psi=%0.3f\n, Mode=%d", wc.x, wc.y,wc.z, wc.phi, wc.theta, wc.psi, gc.mode);
+        SBPL_FPRINTF(fOut, " World: X=%0.3f, Y=%0.3f, Z=%0.3f, Phi=%0.3f, Theta=%0.3f, Psi=%0.3f, Mode=%d\n", wc.x, wc.y,wc.z, wc.phi, wc.theta, wc.psi, gc.mode);
     }else{
         SBPL_FPRINTF(fOut, "\n");
     }
@@ -445,7 +450,7 @@ WorldCoordinate SBPLBasePlannerEnvironment::GridCoordinateToWorldCoordinate(cons
 
     return retCoord;
 }
- 
+
 GridCoordinate SBPLBasePlannerEnvironment::WorldCoordinateToGridCoordinate(const WorldCoordinate &wcoord) const {
 
     GridCoordinate retCoord;
@@ -488,26 +493,26 @@ GridCoordinate SBPLBasePlannerEnvironment::WorldCoordinateToGridCoordinate(const
 
     retCoord.theta = (int)(theta/_anglesize + 0.5);
 	// Catch the angle wrap-around
-	if(retCoord.theta == _numangles)
-		retCoord.theta = 0;
+    if(retCoord.theta == _numangles)
+      retCoord.theta = 0;
 
-    double psi = wcoord.psi;
-    while(psi < 0){
-        psi += 2.0*bmc::pi<double>();
-    }
+  double psi = wcoord.psi;
+  while(psi < 0){
+    psi += 2.0*bmc::pi<double>();
+}
 
-    while(psi >= 2.0*bmc::pi<double>()){
-        psi -= 2.0*bmc::pi<double>();
-    }
+while(psi >= 2.0*bmc::pi<double>()){
+    psi -= 2.0*bmc::pi<double>();
+}
 
-    retCoord.psi = (int)(psi/_anglesize + 0.5);
+retCoord.psi = (int)(psi/_anglesize + 0.5);
     // Catch the angle wrap-around
-    if(retCoord.psi == _numangles)
-        retCoord.psi = 0;
+if(retCoord.psi == _numangles)
+    retCoord.psi = 0;
 
-    retCoord.mode=wcoord.mode;
+retCoord.mode=wcoord.mode;
 
-    return retCoord;
+return retCoord;
 }
 
 GridCoordinate SBPLBasePlannerEnvironment::StateIndexToGridCoordinate(unsigned int stateidx) const{
@@ -530,28 +535,27 @@ int SBPLBasePlannerEnvironment::GridCoordinateToStateIndex(const GridCoordinate 
 
     int retIdx = INVALID_INDEX;
 
-
     //check validity
     if(coord.x < 0 || coord.x >= _gridwidth || 
-       coord.y < 0 || coord.y >= _gridheight ||
-       coord.z < 0 || coord.z >= _griddepth ||
-       coord.phi < 0 || coord.phi >= _numangles ||
-       coord.theta < 0 || coord.theta >= _numangles ||
-       coord.psi < 0 || coord.psi >= _numangles ||
-       coord.mode < 1 || coord.mode > 5 ){
+     coord.y < 0 || coord.y >= _gridheight ||
+     coord.z < 0 || coord.z >= _griddepth ||
+     coord.phi < 0 || coord.phi >= _numangles ||
+     coord.theta < 0 || coord.theta >= _numangles ||
+     coord.psi < 0 || coord.psi >= _numangles ||
+     coord.mode < 1 || coord.mode > 5 ){
         return retIdx;
-    }
-     
-    // retIdx = coord.theta + coord.y * _numangles + coord.x * _numangles * _gridheight;
-    retIdx = coord.mode +
-            coord.phi * _nummodes +
-            coord.theta * _nummodes * _numangles +
-            coord.psi * _nummodes * _numangles * _numangles +
-            coord.x * _nummodes * _numangles * _numangles * _numangles +
-            coord.y * _nummodes * _numangles * _numangles * _numangles * _gridwidth +
-            coord.z * _nummodes * _numangles * _numangles * _numangles * _gridwidth * _gridheight;
+}
 
-    return retIdx;
+    // retIdx = coord.theta + coord.y * _numangles + coord.x * _numangles * _gridheight;
+retIdx = coord.mode +
+coord.phi * _nummodes +
+coord.theta * _nummodes * _numangles +
+coord.psi * _nummodes * _numangles * _numangles +
+coord.x * _nummodes * _numangles * _numangles * _numangles +
+coord.y * _nummodes * _numangles * _numangles * _numangles * _gridwidth +
+coord.z * _nummodes * _numangles * _numangles * _numangles * _gridwidth * _gridheight;
+
+return retIdx;
 }
 
 int SBPLBasePlannerEnvironment::CreateState(const GridCoordinate &gc) {
@@ -576,7 +580,7 @@ int SBPLBasePlannerEnvironment::CreateState(const GridCoordinate &gc) {
 }
 
 bool SBPLBasePlannerEnvironment::IsValidStateId(const int &state_id) const {
-    
+
     if( state_id < 0 || state_id >= StateId2CoordTable.size() ){
         return false;
     }else{
@@ -587,29 +591,29 @@ bool SBPLBasePlannerEnvironment::IsValidStateId(const int &state_id) const {
 
 double SBPLBasePlannerEnvironment::ComputeCost(const GridCoordinate &c1, const GridCoordinate &c2) const 
 {
-    int xdiff = c1.x - c2.x;
-    int ydiff = c1.y - c2.y;
-    int zdiff = c1.z - c2.z;
+    double xdiff = c1.x - c2.x;
+    double ydiff = c1.y - c2.y;
+    double zdiff = c1.z - c2.z;
 
-    int phidiff1 = c2.phi - c1.phi;
+    double phidiff1 = c2.phi - c1.phi;
     if(phidiff1 < 0) phidiff1 += _numangles;
-    int phidiff2 = c1.phi - c2.phi;
+    double phidiff2 = c1.phi - c2.phi;
     if(phidiff2 < 0) phidiff2 += _numangles;
-    int phidiff = std::min(phidiff1, phidiff2);
+    double phidiff = std::min(phidiff1, phidiff2);
 
-    int thetadiff1 = c2.theta - c1.theta;
+    double thetadiff1 = c2.theta - c1.theta;
     if(thetadiff1 < 0) thetadiff1 += _numangles;
-    int thetadiff2 = c1.theta - c2.theta;
+    double thetadiff2 = c1.theta - c2.theta;
     if(thetadiff2 < 0) thetadiff2 += _numangles;
-    int thetadiff = std::min(thetadiff1, thetadiff2);
+    double thetadiff = std::min(thetadiff1, thetadiff2);
 
-    int psidiff1 = c2.psi - c1.psi;
+    double psidiff1 = c2.psi - c1.psi;
     if(psidiff1 < 0) psidiff1 += _numangles;
-    int psidiff2 = c1.psi - c2.psi;
+    double psidiff2 = c1.psi - c2.psi;
     if(psidiff2 < 0) psidiff2 += _numangles;
-    int psidiff = std::min(psidiff1, psidiff2);
+    double psidiff = std::min(psidiff1, psidiff2);
 
-    int mode_cost=0;
+    double mode_cost=0;
     if ( c1.mode != c2.mode ) {
         mode_cost=1;
     }
@@ -618,10 +622,10 @@ double SBPLBasePlannerEnvironment::ComputeCost(const GridCoordinate &c1, const G
                     _tweight*thetadiff*thetadiff + _tweight*psidiff*psidiff + _tweight*phidiff*phidiff +
                     _mweight*mode_cost ;
 */
-    double cost = _lweight*sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff) + 
+                    double cost = _lweight*sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff) + 
                     _tweight*( thetadiff + psidiff + phidiff) +
                     _mweight*mode_cost ;
 
-    return cost;
-}
+                    return cost;
+                }
 
