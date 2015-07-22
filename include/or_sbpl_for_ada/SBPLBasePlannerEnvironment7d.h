@@ -6,7 +6,7 @@
 #include <sbpl/utils/mdp.h>
 #include <sbpl/utils/mdpconfig.h>
 #include <sbpl/utils/utils.h>
-
+#include <cmath>
 #include <openrave/openrave.h>
 
 namespace or_sbpl_for_ada {
@@ -47,8 +47,7 @@ namespace or_sbpl_for_ada {
 				const double &lweight,
 				const double &tweight,
 				const double &mweight,
-				const int &nummodes,
-				const int &start_mode);
+				const int &nummodes);
 
 	/**
 	 * Not implemented - we want to initialize from the OpenRAVE planner parameters
@@ -152,7 +151,7 @@ namespace or_sbpl_for_ada {
 	 * @param theta The yaw of the start
 	 * @return The associated state id
 	 */
-        virtual int SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi);
+        virtual int SetStart(const double &x, const double &y, const double &z, const double &phi, const double &theta, const double &psi, const int &start_mode);
         
 	/**
 	 * Sets the goal state.
@@ -266,7 +265,7 @@ namespace or_sbpl_for_ada {
         int _griddepth;
         int _numangles;
         int _nummodes;
-        int _start_mode;
+        int _n_axes;
 
         ActionList _actions;
         double _timestep; // seconds per step

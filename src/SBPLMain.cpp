@@ -21,3 +21,5 @@ RAVE_PLUGIN_API void DestroyPlugin()
 {
     RAVELOG_INFO("destroying plugin\n");
 }
+
+//test

@@ -1,17 +1,17 @@
-cellsize: 0.01
+cellsize: 0.04
 numangles: 8
 nummodes: 3
 timelimit: 100.0
 linear_weight: 1
 angle_weight: 1
-mode_weight: 2
+mode_weight: 5
 extents:
 - -0.2
-- 0.5
-- -0.5
-- 0.3
+- 0.6
 - -0.3
-- 0.5
+- 0.7
+- -0.2
+- 1.2
 actions:
 - mode: 1
   primitives:
@@ -59,7 +59,7 @@ actions:
       - 0.0
       - 0.0
       - 2
-    weight: 5.0
+    weight: 1.0
   - poses: 
     - - 0.0
       - 0.0
@@ -68,7 +68,7 @@ actions:
       - 0.0
       - 0.0
       - 3
-    weight: 5.0
+    weight: 1.0
 - mode: 2
   primitives:
   - poses:
@@ -115,7 +115,7 @@ actions:
       - 0.0
       - 0.0
       - 1
-    weight: 5.0
+    weight: 1.0
   - poses:
     - - 0.0
       - 0.0
@@ -124,7 +124,7 @@ actions:
       - 0.0
       - 0.0
       - 3
-    weight: 5.0
+    weight: 1.0
 - mode: 3
   primitives:
   - poses:
@@ -171,7 +171,7 @@ actions:
       - 0.0
       - 0.0
       - 1
-    weight: 5.0
+    weight: 1.0
   - poses:
     - - 0.0
       - 0.0
@@ -180,6 +180,6 @@ actions:
       - 0.0
       - 0.0
       - 2
-    weight: 5.0
+    weight: 1.0
 
 
