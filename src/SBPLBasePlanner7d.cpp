@@ -62,65 +62,118 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
 
 #ifdef YAMLCPP_NEWAPI
 
-    YAML::Node doc = YAML::Load(extra_stream);
-    cellsize = doc["cellsize"].as<double>();
-    linear_weight = doc["linear_weight"].as<double>();
-    mode_weight = doc["mode_weight"].as<double>();
-    doc["extents"] >> extents;
-    angle_weight = doc["angle_weight"].as<double>();
-    numangles = doc["numangles"].as<int>();
-    nummodes = doc["nummodes"].as<int>();
-    doc["actions"] >> actions;
-    _maxtime = doc["timelimit"].as<double>();
-    n_axes = doc["n_axes"].as<int>();
+    YAML::Node doc_param = YAML::Load(extra_stream);
+    n_axes = doc_param["n_axes"].as<int>();
     _n_axes = n_axes;
 
+    if ( n_axes == 2 ) {
+
+        std::string s = ros::package::getPath("or_sbpl_for_ada");
+        std::string s2 = "/yaml/actions2DOFs_s2.yaml";
+        std::string s4 = "/yaml/actions2DOFs_s4.yaml";
+        std::string s6 = "/yaml/actions2DOFs_s6.yaml";
+
+        std::vector<OpenRAVE::dReal> start_pos(6);
+        OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
+        OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), _robot->GetLink("mico_end_effector")->GetTransform(), OpenRAVE::DOF_Transform);
+        std::vector<OpenRAVE::dReal> goal_vals;
+        goal_vals = _params->vgoalconfig;
+
+        double min_distance=99999;
+        double distance = 0;
+        if (goal_vals.size()%7 != 0) {
+            RAVELOG_ERROR("[SBPLBasePlanner] wrong goal size : %d", goal_vals.size());
+        }
+        for (int k=0; k<goal_vals.size()/7;k++) {
+        double d1 = abs((start_pos[0]-goal_vals[7*k])*(start_pos[0]-goal_vals[7*k])*1000);
+        double d2 = abs((start_pos[1]-goal_vals[7*k+1])*(start_pos[1]-goal_vals[7*k+1])*1000);
+        double d3 = abs((start_pos[2]-goal_vals[7*k+2])*(start_pos[2]-goal_vals[7*k+2])*1000);
+
+        distance = sqrtf(d1 + d2 + d3 );
+        if (distance < min_distance ) {min_distance=distance; }
+    }
+     //  std::cout <<"start : "<<start_pos[0]<<" "<<start_pos[1]<<" "<<start_pos[2]<<std::endl;
+      //  std::cout <<"goal : "<<goal_vals[0]<<" "<<goal_vals[1]<<" "<<goal_vals[2]<<std::endl;
+      //  std::cout <<"d1 : "<< d1 << std::endl;                  
+      //  std::cout <<"d2 : "<<  d2 << std::endl;
+      // std::cout <<"d3 : "<<  d3 << std::endl;
+
+        
+
+      //  std::cout <<"distance : "<< distance << std::endl;
+        std::string sf;
+        if (min_distance > 7 ) { sf = s + s6; }
+        else {
+            if ( distance > 4 ) {sf = s + s4;}
+            else { sf = s + s2; }
+        }
+
+        std::cout << sf << std::endl;
+        YAML::Node doc = YAML::LoadFile(sf);
+        cellsize = doc["cellsize"].as<double>();
+        linear_weight = doc["linear_weight"].as<double>();
+        mode_weight = doc["mode_weight"].as<double>();
+        doc["extents"] >> extents;
+        angle_weight = doc["angle_weight"].as<double>();
+        numangles = doc["numangles"].as<int>();
+        nummodes = doc["nummodes"].as<int>();
+        doc["actions"] >> actions;
+        _maxtime = doc["timelimit"].as<double>();
+
+    }
+    else { if (n_axes == 3) {
+        RAVELOG_ERROR("[SBPLBasePlanner] n_axes == 3 yaml is not implemented yet");
+    }
+    else {
+        RAVELOG_ERROR("[SBPLBasePlanner] n_axes != 3 & != 2 : n_axes =  %d", n_axes);
+ }
+}
 #else
 
     // Parse the extra parameters as yaml
-    YAML::Parser parser(extra_stream);
-    YAML::Node doc;
-    parser.GetNextDocument(doc);
+YAML::Parser parser(extra_stream);
+YAML::Node doc;
+parser.GetNextDocument(doc);
 
-    RAVELOG_INFO("[SBPLBasePlanner] Parsing\n");
-    doc["n_axes"] >> n_axes;
-    doc["linear_weight"] >> linear_weight;
-    doc["angle_weight"] >> angle_weight;
-    doc["mode_weight"] >> mode_weight;
-    doc["extents"] >> extents;
-    doc["cellsize"] >> cellsize;
-    doc["numangles"] >> numangles;
-    doc["nummodes"] >> nummodes;
-    doc["actions"] >> actions;
-    doc["timelimit"] >> _maxtime;
-    _n_axes = n_axes;
+RAVELOG_INFO("[SBPLBasePlanner] Parsing\n");
+doc["n_axes"] >> n_axes;
+doc["linear_weight"] >> linear_weight;
+doc["angle_weight"] >> angle_weight;
+doc["mode_weight"] >> mode_weight;
+doc["extents"] >> extents;
+doc["cellsize"] >> cellsize;
+doc["numangles"] >> numangles;
+doc["nummodes"] >> nummodes;
+doc["actions"] >> actions;
+doc["timelimit"] >> _maxtime;
+_n_axes = n_axes;
 
-    if (YAML::Node const *init_eps = doc.FindValue("initial_eps")) {
-        *init_eps >> _epsinit;
-        RAVELOG_INFO("[SBPLBasePlanner] Initial epsilon: %0.3f\n", _epsinit);
-    }
+if (YAML::Node const *init_eps = doc.FindValue("initial_eps")) {
+    *init_eps >> _epsinit;
+    RAVELOG_INFO("[SBPLBasePlanner] Initial epsilon: %0.3f\n", _epsinit);
+}
 
 
-    if (YAML::Node const *dec_eps = doc.FindValue("dec_eps")) {
-        *dec_eps >> _epsdec;
-        RAVELOG_INFO("[SBPLBasePlanner] Epsilon decrement: %0.3f\n", _epsdec);
-    }
+if (YAML::Node const *dec_eps = doc.FindValue("dec_eps")) {
+    *dec_eps >> _epsdec;
+    RAVELOG_INFO("[SBPLBasePlanner] Epsilon decrement: %0.3f\n", _epsdec);
+}
 
-    if (YAML::Node const *return_first = doc.FindValue("return_first")) {
-        int rfirst;
-        *return_first >> rfirst;
-        _return_first = (rfirst == 1);
-    }
+if (YAML::Node const *return_first = doc.FindValue("return_first")) {
+    int rfirst;
+    *return_first >> rfirst;
+    _return_first = (rfirst == 1);
+}
 #endif
 
-    RAVELOG_INFO("[SBPLBasePlanner] n_axes : %d\n", n_axes);
-    RAVELOG_INFO("[SBPLBasePlanner] extents : %0.3f\n", extents.xmin);
-    RAVELOG_INFO("[SBPLBasePlanner] angle weight: %0.3f\n", angle_weight);
-    RAVELOG_INFO("[SBPLBasePlanner] mode weight: %0.3f\n", mode_weight);
-    RAVELOG_INFO("[SBPLBasePlanner] Cellsize: %0.3f\n", cellsize);
-    RAVELOG_INFO("[SBPLBasePlanner] Num angles: %d\n", numangles);
-    RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
-    RAVELOG_INFO("[SBPLBasePlanner] Return first: %s\n", (_return_first ? "True" : "False") );
+RAVELOG_INFO("[SBPLBasePlanner] n_axes : %d\n", n_axes);
+RAVELOG_INFO("[SBPLBasePlanner] extents : %0.3f\n", extents.xmin);
+RAVELOG_INFO("[SBPLBasePlanner] angle weight: %0.3f\n", angle_weight);
+RAVELOG_INFO("[SBPLBasePlanner] mode weight: %0.3f\n", mode_weight);
+RAVELOG_INFO("[SBPLBasePlanner] Cellsize: %0.3f\n", cellsize);
+RAVELOG_INFO("[SBPLBasePlanner] Num angles: %d\n", numangles);
+RAVELOG_INFO("[SBPLBasePlanner] Time limit: %0.3f\n", _maxtime);
+RAVELOG_INFO("[SBPLBasePlanner] Return first: %s\n", (_return_first ? "True" : "False") );
 
     _env->Initialize(cellsize, extents, numangles, actions, linear_weight, angle_weight, mode_weight, nummodes); //env qu'on def comme on veut, ici 7d
     _planner = boost::make_shared<ADPlanner>(_env.get(), true);
@@ -162,25 +215,25 @@ manip->GetEndEffectorTransform()
 with
 _robot->GetLink("mico_end_effector")->GetTransform()'
 */
-    OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
-    OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), _robot->GetLink("mico_end_effector")->GetTransform(), OpenRAVE::DOF_Transform);
+OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
+OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), _robot->GetLink("mico_end_effector")->GetTransform(), OpenRAVE::DOF_Transform);
     //OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), manip->GetEndEffectorTransform(), OpenRAVE::DOF_Transform);
 
     //print_start_DOF();    
     //print_start_cart(start_pos);
 
-    std::vector<float> mode_cost;
-    
-    planner_status = best_mode( mode_cost, rparams, ptraj, plan, start_pos);
+std::vector<float> mode_cost;
+
+planner_status = best_mode( mode_cost, rparams, ptraj, plan, start_pos);
 
   //  std::cout <<"Planned for the start pos. mode cost : "
   //      << mode_cost[0]<<" "<<mode_cost[1]<<" "<<mode_cost[2]<<std::endl;
 
-    _cost[0]=mode_cost[0];
-    _cost[1]=mode_cost[1];
-    _cost[2]=mode_cost[2];
+_cost[0]=mode_cost[0];
+_cost[1]=mode_cost[1];
+_cost[2]=mode_cost[2];
 
-    return planner_status;
+return planner_status;
 }
 
 
@@ -223,7 +276,7 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::best_mode( std::vector<float> &mode_cos
             if( solved==1 ){
 
                 OpenRAVE::ConfigurationSpecification config_spec = OpenRAVE::RaveGetAffineConfigurationSpecification(OpenRAVE::DOF_Transform,
-                 _robot, "linear");
+                   _robot, "linear");
         config_spec.AddDerivativeGroups(1, true);  //velocity group, add delta time group
         ptraj->Init(config_spec);
         std::vector<PlannedWaypointPtr> xyzA_path;
@@ -352,8 +405,8 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::init_plan( ) {
 
     OpenRAVE::RaveTransformMatrix<double> R;
     R.rotfrommat(res[0][0], res[0][1], res[0][2],
-     res[1][0], res[1][1] ,res[1][2] ,
-     res[2][0],res[2][1] ,res[2][2] );
+       res[1][0], res[1][1] ,res[1][2] ,
+       res[2][0],res[2][1] ,res[2][2] );
 
     OpenRAVE::RaveVector<double> trans(x, y, z); 
     OpenRAVE::RaveTransform<double> transform(OpenRAVE::geometry::quatFromMatrix(R), trans);
@@ -466,44 +519,3 @@ void SBPLBasePlanner::print_start_cart(std::vector<OpenRAVE::dReal> start_pos) {
     std::cout <<std::endl;
 }
 
-/*
-void SBPLBasePlanner::chatterCallback(const std_msgs::String::ConstPtr& msg)
-{
-
-    // ROS_INFO("I heard: [%s]", msg->data.c_str());
-    _start_pos.clear();
-    std::istringstream iss(msg->data.c_str());
-    std::copy(std::istream_iterator<float>(iss), std::istream_iterator<float>(), std::back_inserter(_start_pos));
-    std::cout <<"listened to start pos. size : "<< _start_pos.size() << std::endl;
-}
-
-void SBPLBasePlanner::start_listener()
-{
-  // ros::init(argc, argv, "listener_start_pos");
-  ros::NodeHandle n;
-  ros::Subscriber sub = n.subscribe("start_pos", 10, &SBPLBasePlanner::chatterCallback, this);
-  ros::spin();
-}
-*/
-
-ros::Publisher SBPLBasePlanner::init_path_cost_publisher()
-{
-  ros::NodeHandle n;
-  ros::Publisher path_cost_pub = n.advertise<std_msgs::String>("path_cost", 10);
-
-  return path_cost_pub;
-}
-
-std_msgs::String SBPLBasePlanner::floatToStringToPub( std::vector<float> mode_cost ) {
-
-    std::string cost_string;
-    for ( int i=0;i<mode_cost.size();i++) {
-        cost_string = cost_string + boost::to_string(mode_cost[i]) + " ";
-    }
-
-    std_msgs::String msg;
-    std::stringstream ss;
-    ss << cost_string;
-    msg.data = ss.str();
-    return msg;
-}
