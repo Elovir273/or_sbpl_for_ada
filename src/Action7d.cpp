@@ -60,8 +60,8 @@ std::vector<WorldCoordinate> Action7d::applyWithIntermediates(const WorldCoordin
         robot->SetTransform(transform);
         
         // Check for collision and break out if needed
-        bool incollision = robot->GetEnv()->CheckCollision(robot); // env reel 
-        valid = !incollision;
+      //  bool incollision = robot->GetEnv()->CheckCollision(robot); // env reel 
+      //  valid = !incollision;
 
        // std::cout << "valid action : "<< valid << std::endl;
 

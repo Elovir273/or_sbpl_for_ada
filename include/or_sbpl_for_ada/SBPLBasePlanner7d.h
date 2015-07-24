@@ -23,7 +23,7 @@
 #include <iostream>
 #include <cassert>
 #include <sstream>
-
+#include <cmath>
 
 namespace or_sbpl_for_ada {
 
@@ -84,12 +84,8 @@ namespace or_sbpl_for_ada {
 	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, 
 		OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan, std::vector<OpenRAVE::dReal> start_pos);
 	OpenRAVE::PlannerStatus init_plan();
+	bool goal_achieved( std::vector<OpenRAVE::dReal> start_pos);
 
-	void start_listener();
-	void chatterCallback(const std_msgs::String::ConstPtr& msg);
-	ros::Publisher init_path_cost_publisher();
-	std_msgs::String floatToStringToPub( std::vector<float> mode_cost );
- 
 	void AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec,
 			 const double &x, const double &y, const double &z, const double &theta, const double &phi,const double &psi,const int &mode) const;
 	bool GetPathCost(std::ostream &out, std::istream &in);

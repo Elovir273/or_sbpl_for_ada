@@ -161,7 +161,7 @@ void SBPLBasePlannerEnvironment::ConvertStateIDPathIntoWaypointPath(const std::v
     std::vector<WorldCoordinate> &cart_path,
     std::vector<WorldCoordinate> &action_list ) {
 
-    bool print_info = false;;
+    bool print_info = true;
 
     RAVELOG_INFO("[SBPLBasePlannerEnvironment] Begin ConvertStateIDPathIntoXYThetaPath\n");
 
