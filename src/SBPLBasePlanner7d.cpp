@@ -228,7 +228,6 @@ OpenRAVE::PlannerStatus SBPLBasePlanner::PlanPath(OpenRAVE::TrajectoryBasePtr pt
         _cost[0]=99999;
         _cost[1]=99999;
         _cost[2]=99999;
-        std::printf("planner failed");
     }
 
     else {
@@ -349,8 +348,8 @@ bool SBPLBasePlanner::goal_achieved( std::vector<OpenRAVE::dReal> start_pos) {
     std::vector<OpenRAVE::dReal> goal_vals;
     goal_vals = _params->vgoalconfig;
 
-    float eps1 = 0.01;
-    float eps2 = 0.2;
+    float eps1 = 0.015;
+    float eps2 = 0.45;
 
     if ( (fabs(goal_vals[0]-start_pos[0]) < eps1) && (fabs(goal_vals[1]-start_pos[1]) < eps1) && (fabs(goal_vals[2]-start_pos[2]) < eps1) &&
         (fabs(goal_vals[3]-start_pos[3]) < eps2) && (fabs(goal_vals[4]-start_pos[4]) < eps2) && (fabs(goal_vals[5]-start_pos[5]) < eps2) ) {
