@@ -39,19 +39,19 @@ std::vector<WorldCoordinate> Action7d::applyWithIntermediates(const WorldCoordin
     bool valid = true;
 
     // Only one new position for each action, not a succession. It's an array with only one element.
+    // We could gain in precision in the collision checking if we had intermediate points for the actions, 
+    // but that's not our goal
     WorldCoordinate next_pos=_pts[0];
     WorldCoordinate wc_current(wc);
 
-        double coef_pos=0.01;
-        double coef_angle=0.4; 
         //( Pi/16 ~= 0.1963 : a bit more to be sure it moves, if num_angle == 16
         // if numangle == 8, use coef_angle == 8 )
-        wc_current.x += coef_pos*next_pos.x;
-        wc_current.y += coef_pos*next_pos.y;
-        wc_current.z += coef_pos*next_pos.z;
-        wc_current.phi += coef_angle*next_pos.phi;
-        wc_current.theta += coef_angle*next_pos.theta;
-        wc_current.psi += coef_angle*next_pos.psi;
+        wc_current.x += next_pos.x;
+        wc_current.y += next_pos.y;
+        wc_current.z += next_pos.z;
+        wc_current.phi += next_pos.phi;
+        wc_current.theta += next_pos.theta;
+        wc_current.psi += next_pos.psi;
         wc_current.mode = next_pos.mode;
 
       //  std::cout << wc_current.x<<" "<<wc_current.y<<" "<<wc_current.z<<" "<<wc_current.phi<<" "
@@ -64,8 +64,6 @@ std::vector<WorldCoordinate> Action7d::applyWithIntermediates(const WorldCoordin
         bool incollision = robot->GetEnv()->CheckCollision(robot); // env reel 
         valid = !incollision;
         
-       // std::cout << "valid action : "<< valid << std::endl;
-
         if(valid){
             intermediates.push_back(wc_current);
         }
@@ -74,7 +72,6 @@ std::vector<WorldCoordinate> Action7d::applyWithIntermediates(const WorldCoordin
             rStateSaver.Restore();
             return intermediates;
         }
-    //}
     
     // Restore state
     rStateSaver.Restore();
