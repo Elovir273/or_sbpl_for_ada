@@ -8,8 +8,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include <sbpl/config.h>
-#include <sbpl/planners/planner.h>
+#include <sbplmg/config.h>
+#include <sbplmg/planners/planner.h>
 
 #include <or_sbpl_for_ada/SBPLBasePlannerEnvironment7d.h>
 

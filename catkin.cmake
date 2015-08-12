@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(or_sbpl_for_ada)
 
+
 find_package(catkin REQUIRED COMPONENTS 
   openrave_catkin
   roscpp
@@ -17,7 +18,7 @@ catkin_package(
 find_package(OpenRAVE REQUIRED)
 
 include(FindPkgConfig)
-pkg_check_modules(SBPL REQUIRED sbpl)
+pkg_check_modules(SBPLMG REQUIRED sbplmg)
 pkg_check_modules(YamlCpp REQUIRED yaml-cpp)
 
 if (${YamlCpp_VERSION} VERSION_LESS 0.5.0)
@@ -29,14 +30,14 @@ endif ()
 include_directories(
   include
   ${OpenRAVE_INCLUDE_DIRS}
-  ${SBPL_INCLUDE_DIRS}
+  ${SBPLMG_INCLUDE_DIRS}
   ${Yaml_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   )
 
 link_directories(
   ${OpenRAVE_LIBRARY_DIRS} 
-  ${SBPL_LIBRARY_DIRS} 
+  ${SBPLMG_LIBRARY_DIRS} 
   ${Yaml_LIBRARY_DIRS}
   ${catkin_LIBRARIES_DIRS}
   )
@@ -48,7 +49,7 @@ add_library(${PROJECT_NAME}
   src/Action7d.cpp)
 
 target_link_libraries(${PROJECT_NAME}
-    ${SBPL_LIBRARIES} 
+    ${SBPLMG_LIBRARIES} 
     ${OpenRAVE_LIBRARIES} 
     ${Yaml_LIBRARIES}
     ${catkin_LIBRARIES}
@@ -58,7 +59,7 @@ openrave_plugin(${PROJECT_NAME}_plugin src/SBPLMain.cpp)
 target_link_libraries(${PROJECT_NAME}_plugin
     ${PROJECT_NAME} 
     yaml-cpp 
-    ${SBPL_LIBRARIES} 
+    ${SBPLMG_LIBRARIES} 
     ${OpenRAVE_LIBRARIES}
     ${catkin_LIBRARIES}
     )

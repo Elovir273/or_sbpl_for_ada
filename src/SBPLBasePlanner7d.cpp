@@ -7,9 +7,9 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
-#include <sbpl/planners/adplanner.h>
-#include <sbpl/planners/planner.h>
-#include <sbpl/utils/utils.h>
+#include <sbplmg/planners/adplanner.h>
+#include <sbplmg/planners/planner.h>
+#include <sbplmg/utils/utils.h>
 
 #include <yaml-cpp/yaml.h>
 #include <fstream>
@@ -171,8 +171,10 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     RAVELOG_INFO("[SBPLBasePlanner] Return first: %s\n", (_return_first ? "True" : "False") );
 
     _env->Initialize(cellsize, extents, numangles, actions, linear_weight, angle_weight, mode_weight, nummodes); //env qu'on def comme on veut, ici 7d
+    std::cout <<"end init env"<<std::endl;
     _planner = boost::make_shared<ADPlanner>(_env.get(), true);
 
+    std::cout <<"end init planner"<<std::endl;
     return true;
 }
 

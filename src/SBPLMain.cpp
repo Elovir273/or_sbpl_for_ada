@@ -5,7 +5,7 @@ using namespace OpenRAVE;
 
 InterfaceBasePtr CreateInterfaceValidated(InterfaceType type, const std::string& interfacename, std::istream& sinput, EnvironmentBasePtr penv)
 {
-    if (type == PT_Planner && interfacename == "sbpl")
+    if (type == PT_Planner && interfacename == "sbplmg")
     {
         return InterfaceBasePtr(new or_sbpl_for_ada::SBPLBasePlanner(penv));
     }
@@ -14,7 +14,7 @@ InterfaceBasePtr CreateInterfaceValidated(InterfaceType type, const std::string&
 
 void GetPluginAttributesValidated(PLUGININFO& info)
 {
-    info.interfacenames[PT_Planner].push_back("sbpl");
+    info.interfacenames[PT_Planner].push_back("sbplmg");
 }
 
 RAVE_PLUGIN_API void DestroyPlugin()
