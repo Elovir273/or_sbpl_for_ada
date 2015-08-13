@@ -533,7 +533,6 @@ int SBPLBasePlannerEnvironment::GridCoordinateToStateIndex(const GridCoordinate 
         return retIdx;
     }
      
-    // retIdx = coord.theta + coord.y * _numangles + coord.x * _numangles * _gridheight;
     retIdx = coord.mode +
             coord.phi * _nummodes +
             coord.theta * _nummodes * _numangles +

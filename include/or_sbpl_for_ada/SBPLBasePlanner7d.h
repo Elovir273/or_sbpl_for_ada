@@ -79,39 +79,112 @@ namespace or_sbpl_for_ada {
 
     private:
 
+    /**
+    * Print the joints values of the robot
+    */
 	void print_start_DOF();
+
+	/**
+    * Print the joints values of the robot
+	*
+    * @param start_pos Vector with the values of the start position
+    */
 	void print_start_cart(std::vector<OpenRAVE::dReal> start_pos);
+
+	/**
+    * Launches the planner number_of_modes times to obtain the different costs associated
+	* with each start mode
+	*
+    * @param mode_cost Vector to be filled with the results
+    * @param rparams parameters for the planner (initial_eps, dec_eps, max_time... )
+	* @param plan List of ID given back by the planner representing the optimal path
+    * @param ptraj The trajectory to append the waypoint to
+    * @param start_pos Vector with the values of the start position
+    * @return The status of the planner, if it succeded or not
+    */
 	OpenRAVE::PlannerStatus best_mode( std::vector<float> &mode_cost, ReplanParams rparams, 
 		OpenRAVE::TrajectoryBasePtr ptraj, std::vector<int>& plan, std::vector<OpenRAVE::dReal> start_pos);
+
+	/**
+    * Goal initialization
+	*
+    * @return Indicate if the goal initialization suceeded or not
+    */
 	OpenRAVE::PlannerStatus init_plan();
+
+	/**
+    *@param start_pos Vector with the values of the start position
+	*@return True if we are already at the goal
+    */
 	bool goal_achieved( std::vector<OpenRAVE::dReal> start_pos);
+
+
+	/**
+    * Apply transforms to get the start position from the model of the robot.
+    * First a translation to the center of the world frame, then obtention of the wrist rotation by comparison to the reference, 
+    * Then a rotation to obtain the wrist orientation relative to the hand frame
+    *
+    *@param start_pos Vector with the values of the start position
+	*@return The start position values
+    */
 	bool get_start_val( std::vector<OpenRAVE::dReal>& start_pos );
+
+	/**
+    * 
+	*@return The multiplication of two quaternion (x,y,z,w)
+    */
 	OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > quat_mult(
 		OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > q1, OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > q2);
 	
+	/*
+	* Creates a waypoint and adds it to the trajectory
+	* 
+	* @param ptraj The trajectory to append the waypoint to
+	* @param config_spec The configuration specification for the trajectory
+	* @param t The delta time value
+	* @param x The x location
+	* @param y The y location
+	* @param theta The orientation
+	*/
 	void AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec,
 			 const double &x, const double &y, const double &z, const double &theta, const double &phi,const double &psi,const int &mode) const;
-	bool GetPathCost(std::ostream &out, std::istream &in);
+	
+
+	/**
+    * Allow to get results back in sbpl_ams, because you can't add public functions.
+    * @return The cost for the different start modes
+    */
 	bool GetPathsCosts(std::ostream &out, std::istream &in);
+
+	/**
+    * Allow to get results back in sbpl_ams, because you can't add public functions.
+    * @return The list of world coordinate for the last path
+    */
 	bool GetCartPath(std::ostream &out, std::istream &in);
+
+	/**
+    * Allow to get results back in sbpl_ams, because you can't add public functions.
+    * @return The list of actions for the last path
+    */
 	bool GetListActions(std::ostream &out, std::istream &in);
 
-        OpenRAVE::EnvironmentBasePtr _orenv;
-        OpenRAVE::RobotBasePtr _robot;
-        PlannerParametersConstPtr _params;
-        SBPLPlannerPtr _planner;
-        SBPLBasePlannerEnvironmentPtr _env;
+    OpenRAVE::EnvironmentBasePtr _orenv;
+    OpenRAVE::RobotBasePtr _robot;
+    PlannerParametersConstPtr _params;
+    SBPLPlannerPtr _planner;
+    SBPLBasePlannerEnvironmentPtr _env;
 
-        std::vector<WorldCoordinate> _cart_path;
-        std::vector<WorldCoordinate> _list_actions;
+    std::vector<WorldCoordinate> _cart_path;
+    std::vector<WorldCoordinate> _list_actions;
 
-	float _cost[3];
+	std::vector<float> _cost;
     double _path_cost;    
 	double _maxtime;
 	double _maxtime_temp;
 	double _epsinit;
 	double _epsdec;
 	int _n_axes;
+	int _n_modes;
 	bool _return_first;
 	bool _initialized;
     
