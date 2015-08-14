@@ -17,6 +17,7 @@
 using namespace or_sbpl_for_ada;
 
 SBPLBasePlanner::SBPLBasePlanner(OpenRAVE::EnvironmentBasePtr penv) :
+// Here you modify the epsilon values you want. 
 OpenRAVE::PlannerBase(penv), _orenv(penv), _initialized(false), _maxtime(5), _path_cost(-1.0),
 _epsinit(3), _epsdec(1.0), _return_first(false), _n_modes(0) {
 
@@ -80,6 +81,8 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     }
     else {
         s2= "/yaml/actions3DOFs_s2.yaml";
+        s4= "/yaml/actions3DOFs_s4.yaml";
+        s6= "/yaml/actions3DOFs_s6.yaml";
     }
 
     std::vector<OpenRAVE::dReal> start_pos(6);
@@ -88,7 +91,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
     std::vector<OpenRAVE::dReal> goal_vals;
     goal_vals = _params->vgoalconfig;
 
-        // it's in meter, so this much for an upper limit is fine
+    // it's in meter, so this much for an upper limit is fine
     double min_distance=999999;
     double distance = 0;
     if (goal_vals.size()%7 != 0) {
@@ -102,17 +105,13 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
         if (distance < min_distance ) {min_distance=distance; }
     }
 
-        // adaptive steps. This can be tune
+    // adaptive steps. This can be tune
     std::string sf;
-    if (_n_axes == 2 ) {
-        if (min_distance > 7 ) { sf = s + s6; }
-        else {
-            if ( distance > 4 ) {sf = s + s4;}
-            else { sf = s + s2; }
-        }
-    }
+
+    if (min_distance > 7 ) { sf = s + s6; }
     else {
-        sf = s + s2;
+        if ( distance > 4 ) {sf = s + s4;}
+        else { sf = s + s2; }
     }
 
         // Getting back the info from the yaml file
@@ -221,6 +220,7 @@ else {
         }
     }
 
+    // Loop for each mode
     for (int compteur_mode=mode_min; compteur_mode <= mode_max; compteur_mode++) {
 
         std::vector<int> plan;
@@ -294,32 +294,25 @@ bool SBPLBasePlanner::get_start_val( std::vector<OpenRAVE::dReal>& start_pos ) {
     OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), 
         _robot->GetLink("mico_end_effector")->GetTransform(), OpenRAVE::DOF_Transform);
 
-    OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
-    OpenRAVE::RaveTransform< OpenRAVE::dReal > wrist_trans = manip->GetEndEffectorTransform();
     OpenRAVE::RaveTransform< OpenRAVE::dReal > ee_trans = _robot->GetLink("mico_end_effector")->GetTransform();
-    OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > rotation = OpenRAVE::geometry::RaveVector< OpenRAVE::dReal >(1.,0.,0.,0.);
-    OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > translation = OpenRAVE::geometry::RaveVector< OpenRAVE::dReal >(-ee_trans.trans.x,-ee_trans.trans.y,-ee_trans.trans.z);
-    OpenRAVE::RaveTransform< OpenRAVE::dReal > global_frame_trans = OpenRAVE::RaveTransform< OpenRAVE::dReal >(rotation, translation);
-
-
     OpenRAVE::RaveTransform< OpenRAVE::dReal > centered_wrist_trans;
-    //centered_wrist_trans = OpenRAVE::RaveTransform< OpenRAVE::dReal >(global_frame_trans * wrist_trans);
+    // Translation to the center of the global frame
     centered_wrist_trans = ee_trans;
     centered_wrist_trans.trans.x = 0;
     centered_wrist_trans.trans.y = 0;
     centered_wrist_trans.trans.z = 0;
 
-   // std::cout <<"centered ref  : "<<centered_wrist_trans.rot.x<<" "<<centered_wrist_trans.rot.y<<" "<<centered_wrist_trans.rot.z<<" "<<centered_wrist_trans.rot.w<<std::endl;
-
+    // Definition of the reference
     OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > target_rotation = OpenRAVE::geometry::RaveVector< OpenRAVE::dReal >(0.604918, 0.583349, 0.398589, 0.367293);
     OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > target_translation = OpenRAVE::geometry::RaveVector< OpenRAVE::dReal >(0.,0.,0.);
     OpenRAVE::RaveTransform< OpenRAVE::dReal > target_transform = OpenRAVE::RaveTransform< OpenRAVE::dReal >(target_rotation, target_translation);
 
-   // centered_wrist_trans.inverse();
+    // Inverse
     centered_wrist_trans.rot.y = -centered_wrist_trans.rot.y;
     centered_wrist_trans.rot.z = -centered_wrist_trans.rot.z;
     centered_wrist_trans.rot.w = -centered_wrist_trans.rot.w;
 
+    // Comparison of the angles between the centered ee tranform and the reference transform
     OpenRAVE::RaveTransform< OpenRAVE::dReal > result_trans;
     result_trans = OpenRAVE::RaveTransform< OpenRAVE::dReal >( centered_wrist_trans * target_transform  );
 
@@ -332,10 +325,9 @@ bool SBPLBasePlanner::get_start_val( std::vector<OpenRAVE::dReal>& start_pos ) {
     double theta = asin(2*(q0*q2 - q3*q1));
     double psi = atan2(2*(q0*q3 + q1*q2), 1-2*(q2*q2 + q3*q3));
 
-    OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > angle = OpenRAVE::geometry::axisAngleFromQuat(result_trans.rot);
-
-
+    // Apply a rotation of -Psi to the quaternions
     OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > quat_rot_psi = OpenRAVE::geometry::RaveVector< OpenRAVE::dReal >(sin( psi / 2.0 ),0,0,cos( psi / 2.0 ));
+    // Compare to the reference transform
     OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > quat_rot_result_trans = quat_mult(quat_rot_psi, result_trans.rot);
 
     q0 = quat_rot_result_trans[0];
@@ -347,6 +339,9 @@ bool SBPLBasePlanner::get_start_val( std::vector<OpenRAVE::dReal>& start_pos ) {
     double theta_rot = asin(2*(q0*q2 - q3*q1));
     double psi_rot = atan2(2*(q0*q3 + q1*q2), 1-2*(q2*q2 + q3*q3));
 
+    // Done ! We finally got what we want : 
+    // Wrist rotation in the centered frame
+    // Wrist oritentation in the hand frame
     start_pos[3] = phi_rot;
     start_pos[4] = theta_rot;
     start_pos[5] = psi;
@@ -354,6 +349,7 @@ bool SBPLBasePlanner::get_start_val( std::vector<OpenRAVE::dReal>& start_pos ) {
     return true;
 }
 
+// Muliplication of 2 quaterniosn
 OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > SBPLBasePlanner::quat_mult(OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > q1, OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > q2) {
     OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > mult;
     mult[0] = q1[3]*q2[0] - q1[2]*q2[1] + q1[1]*q2[2] + q1[0]*q2[3];
@@ -363,6 +359,7 @@ OpenRAVE::geometry::RaveVector< OpenRAVE::dReal > SBPLBasePlanner::quat_mult(Ope
     return mult;
 }
 
+// Check if we are actually at the goal
 bool SBPLBasePlanner::goal_achieved( std::vector<OpenRAVE::dReal> start_pos) {
     std::vector<OpenRAVE::dReal> goal_vals;
     goal_vals = _params->vgoalconfig;
@@ -379,8 +376,6 @@ bool SBPLBasePlanner::goal_achieved( std::vector<OpenRAVE::dReal> start_pos) {
 }
 return false;
 }
-
-
 
 
 void SBPLBasePlanner::AddWaypoint(OpenRAVE::TrajectoryBasePtr ptraj, const OpenRAVE::ConfigurationSpecification &config_spec, 

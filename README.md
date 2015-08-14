@@ -28,3 +28,11 @@ When this file opens a new state, it gets a new id, which is id[precedent state]
 All the informations concerning the actions are within the yaml files in the yaml folder. actions2DOFs_s2.yaml means it's a file describing an action with 2 Degrees of Freedom with a step of 2 cm. It's loading different files depending on the distance to the closest goal to adapt the step size and so the speed of the search. The actions are described as only one point, while they could be an array of points ( see herb.py, on or_sbpl ). More points means more collision checking; we primary intend to be faster, not safer ( as it's the user giving all the movements input ). 
 However, if you're using a robot who is not following the grid ( it's quite rare to do so ), you can create your own file (matlab might help ).
 
+## AD*
+Anytime D8, which means it's using a weighted heuristic and also reuses the searches between searches. 
+If you give enough time to the planner the solution will be optimal. If you don't give it enough time to find at leat a solution you get a Openrave::PS_Status OpenRAVE::PS_Failed. The intermediate option ( medium time given ) gives a suboptimal path. This is not fantastic because usualy it's making more mode switchings than necessary and it messes up the idea. Playing with the weights of the modes might allow to use more suboptimal path ( some suboptimal paths can already be useful with { linear_weight: 1, angle_weight: 1, mode_weight: 5 }. Some experiments and tuning are necessary. 
+Modifying the espilon values and other parameters of the planner is done in SBPLBasePlanner.cpp l20
+
+
+
+
