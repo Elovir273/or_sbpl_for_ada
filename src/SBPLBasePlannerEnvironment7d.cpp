@@ -143,6 +143,7 @@ std::vector<int> SBPLBasePlannerEnvironment::SetGoal(const std::vector<double> g
         state_id = it->second;
     }
 
+    std::cout << state_id << std::endl;
     _goal.push_back(state_id); //_goal = state_id;
     goals_id.push_back(state_id);
     
@@ -522,14 +523,13 @@ int SBPLBasePlannerEnvironment::GridCoordinateToStateIndex(const GridCoordinate 
     int retIdx = INVALID_INDEX;
 
 
-    //check validity
+    //check validity ( not taking care of the mode, it has been checked earlier )
     if(coord.x < 0 || coord.x >= _gridwidth || 
        coord.y < 0 || coord.y >= _gridheight ||
        coord.z < 0 || coord.z >= _griddepth ||
        coord.phi < 0 || coord.phi >= _numangles ||
        coord.theta < 0 || coord.theta >= _numangles ||
-       coord.psi < 0 || coord.psi >= _numangles ||
-       coord.mode < 1 || coord.mode > 5 ){
+       coord.psi < 0 || coord.psi >= _numangles ){
         return retIdx;
     }
      

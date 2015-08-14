@@ -85,6 +85,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
         s6= "/yaml/actions3DOFs_s6.yaml";
     }
 
+    std::cout <<"loading"<<std::endl;
     std::vector<OpenRAVE::dReal> start_pos(6);
     OpenRAVE::RobotBase::ManipulatorPtr manip=_robot->GetActiveManipulator();
     OpenRAVE::RaveGetAffineDOFValuesFromTransform(start_pos.begin(), _robot->GetLink("mico_end_effector")->GetTransform(), OpenRAVE::DOF_Transform);
@@ -114,7 +115,7 @@ bool SBPLBasePlanner::InitPlan(OpenRAVE::RobotBasePtr robot, PlannerParametersCo
         else { sf = s + s2; }
     }
 
-        // Getting back the info from the yaml file
+    // Getting back the info from the yaml file
     std::cout << sf << std::endl;
     YAML::Node doc = YAML::LoadFile(sf);
     cellsize = doc["cellsize"].as<double>();

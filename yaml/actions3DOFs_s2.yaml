@@ -1,6 +1,6 @@
 cellsize: 0.02
 numangles: 16
-nummodes: 3
+nummodes: 2
 timelimit: 10
 linear_weight: 1
 angle_weight: 1
